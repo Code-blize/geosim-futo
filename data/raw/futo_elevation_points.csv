@@ -1,1 +1,12 @@
-
+id,longitude,latitude,elevation_m,location
+VES_1,7.016667,5.366667,177,"Church, Eziobodo"
+VES_2,7.000000,5.366667,210,"Girls Sec. School, Eziobodo"
+VES_3,6.983333,5.433333,178,"Gas Plant, Avu"
+VES_4,6.983333,5.400000,185,"FUTO Road, Obinze"
+VES_5,6.966667,5.416667,170,"Church, Obinze"
+VES_6,7.000000,5.433333,216,"Micoh Guest House Junction, Okowu Village, Nekede"
+VES_7,7.016667,5.400000,197,"Magistrate Court, Ihiagwa"
+VES_8,7.050000,5.450000,229,"Industrial Cluster, Nekede"
+VES_9,6.950000,5.433333,159,"Primary School, Avu"
+VES_10,7.000000,5.400000,210,"Umuchimma Village Gate, Ihiagwa"
+VES_11,7.000000,5.383333,194,"Behind Geology Building, FUTO"
