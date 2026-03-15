@@ -1,74 +1,133 @@
 # GeoSim FUTO
 
-A Generative AI-Enhanced GIS Project for 3D Terrain Reconstruction and Environmental Change Simulation around the Federal University of Technology Owerri (FUTO), Nigeria.
+**GeoSim FUTO** is a Generative AI-enhanced GIS project for 3D terrain reconstruction, environmental vulnerability mapping, and scenario-based inundation simulation around the Federal University of Technology Owerri (FUTO), Nigeria.
+
+The project combines geospatial interpolation, terrain analysis, weighted flood susceptibility modeling, interactive 3D visualization, and data-grounded Generative AI scene prompting in a single end-to-end workflow.
+
+---
 
 ## Overview
 
-GeoSim FUTO is a geospatial data science project that transforms real elevation point data from the FUTO environment into an interactive 3D terrain model. The project combines GIS, Python, environmental simulation, and Generative AI concepts to build an immersive system capable of visualizing terrain and simulating environmental change.
+This project was developed as a learning-driven GIS and data science workflow using real elevation point data from locations around FUTO and nearby communities. The study reconstructs terrain from sparse sampled points, analyzes surface characteristics, identifies environmentally vulnerable zones, simulates inundation scenarios, and translates GIS outputs into immersive scene prompts for future AR/VR-style visualization.
 
-This project was developed as a learning-driven exploration of how geospatial data can be reconstructed into meaningful 3D environments and enhanced for future AR/VR applications.
+Rather than using Generative AI to invent terrain, the project uses real GIS-derived terrain and environmental metrics as the foundation, while Generative AI is applied as a grounded scene-generation and storytelling layer.
+
+---
 
 ## Project Aim
 
-To develop a GIS-based system that reconstructs the FUTO terrain from elevation point data, simulates environmental change, and explores the use of Generative AI for immersive geospatial visualization.
+To develop a GIS-based environmental modeling workflow that reconstructs terrain from real elevation points, identifies flood-prone zones, simulates environmental change, and integrates Generative AI for immersive geospatial visualization.
+
+---
 
 ## Objectives
 
-- Clean and organize real-world geospatial elevation data from the FUTO area
-- Interpolate scattered elevation points into a continuous terrain surface
-- Visualize the terrain in 2D and 3D
-- Simulate environmental change scenarios such as flood vulnerability
-- Explore the integration of Generative AI for scene enrichment and future immersive visualization
-- Build a reproducible project structure suitable for research and portfolio presentation
+- Organize and analyze real-world elevation point data around FUTO
+- Compare interpolation methods for terrain reconstruction
+- Select the most suitable interpolation method using validation
+- Derive terrain products such as contours, slope, and terrain classes
+- Build a flood susceptibility model using weighted overlay
+- Simulate mild, moderate, and severe inundation scenarios
+- Create interactive 3D terrain and environmental risk visualizations
+- Generate data-grounded AI prompts for immersive environmental scene design
+
+---
 
 ## Study Area
 
-The study area covers locations around the Federal University of Technology Owerri (FUTO) and surrounding communities in Imo State, Nigeria, including Eziobodo, Obinze, Avu, Nekede, and Ihiagwa.
+The study area covers locations around the Federal University of Technology Owerri (FUTO), including surrounding communities such as Eziobodo, Obinze, Avu, Nekede, and Ihiagwa in Imo State, Nigeria.
+
+---
 
 ## Dataset
 
-The dataset currently consists of sampled elevation points with the following attributes:
+The project uses sparse elevation survey points with the following attributes:
 
+- Point ID
 - Longitude
 - Latitude
 - Elevation (m)
 - Location name
 
-Example data points include:
-- Church, Eziobodo
-- Girls Secondary School, Eziobodo
-- Gas Plant, Avu
-- Behind Geology Building, FUTO
+These measured points were used as the basis for terrain interpolation and subsequent environmental analysis.
+
+---
 
 ## Methodology
 
-The project workflow follows these stages:
+The workflow followed these major stages:
 
-1. Data collection and cleaning  
-   Elevation point data is structured into a clean tabular dataset.
+1. **Data loading and cleaning**  
+   Elevation point data was structured into a clean tabular format.
 
-2. Terrain interpolation  
-   Spatial interpolation methods are applied to estimate unknown elevation values between known sample points.
+2. **Interpolation comparison and validation**  
+   Four interpolation methods were compared:
+   - Nearest Neighbor
+   - Linear
+   - Cubic
+   - Inverse Distance Weighting (IDW)
 
-3. Terrain visualization  
-   The interpolated surface is visualized as a 2D surface map and a 3D terrain model.
+   Leave-One-Out Cross-Validation (LOOCV) was used to assess prediction reliability. IDW was selected as the most practical method because it provided complete prediction coverage and stable performance for the sparse dataset.
 
-4. Environmental simulation  
-   Terrain-based simulations are performed to identify environmentally vulnerable zones, such as low-lying flood-prone areas.
+3. **Terrain analysis**  
+   The selected IDW surface was used to generate:
+   - Contour map
+   - Slope map
+   - Terrain classification map
 
-5. Generative AI integration  
-   Generative AI concepts are introduced to enrich the terrain scene, generate plausible environmental scenarios, and support immersive AR/VR-style experiences.
+4. **Flood susceptibility mapping**  
+   A weighted overlay approach combined:
+   - Elevation vulnerability
+   - Slope vulnerability
+   - Terrain-class vulnerability
 
-## Tools and Technologies
+   This produced both continuous and classified flood susceptibility layers.
 
-- Python
-- NumPy
-- Pandas
-- Matplotlib
-- SciPy
-- GIS concepts and terrain modeling
-- HTML-based interactive visualization
-- Generative AI concepts for scene enrichment
+5. **Scenario-based environmental simulation**  
+   Mild, moderate, and severe inundation scenarios were created using terrain-based water-level thresholds to simulate how increasing inundation could affect the study area.
+
+6. **Interactive 3D visualization**  
+   Plotly was used to create interactive browser-based 3D terrain and flood-risk scenes.
+
+7. **Generative AI integration**  
+   GIS-derived environmental outputs were translated into:
+   - Semantic scene zones
+   - Data-grounded AI scene prompts
+   - Narrative summaries for communication and immersive visualization planning
+
+---
+
+## Key Results
+
+The project produced:
+
+- Interpolation comparison in 2D and 3D
+- Validation table for interpolation method selection
+- IDW-based terrain surface
+- Contour map
+- Slope map
+- Terrain classification map
+- Flood susceptibility map
+- Classified flood susceptibility zones
+- Scenario-based inundation simulation
+- Interactive 3D terrain and flood-risk HTML outputs
+- Semantic scene zoning for generative visualization
+- Data-grounded Generative AI prompts
+- Project narrative and abstract
+
+---
+
+## Generative AI Layer
+
+The Generative AI component of this project does not replace GIS analysis. Instead, it uses GIS-derived terrain, scene zoning, susceptibility patterns, and scenario metrics to generate grounded prompts for immersive environmental visualization.
+
+This makes the AI layer:
+- evidence-based
+- geographically informed
+- suitable for future AR/VR-style applications
+- useful for environmental storytelling and presentation
+
+---
 
 ## Project Structure
 
@@ -79,8 +138,15 @@ geosim-futo/
 ├── .gitignore
 ├── data/
 │   ├── raw/
+│   │   └── futo_elevation_points.csv
 │   └── processed/
 ├── notebooks/
+│   └── 00_geosim_futo_full_workflow.ipynb
 ├── src/
 ├── outputs/
-└── app/
+│   ├── figures/
+│   ├── reports/
+│   └── tables/
+├── app/
+│   └── web/
+└── docs/
