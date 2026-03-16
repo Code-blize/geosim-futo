@@ -2,5 +2,6 @@ numpy
 pandas
 matplotlib
 scipy
-jupyter
 plotly
+jupyter
+notebook
