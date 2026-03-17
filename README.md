@@ -1,152 +1,225 @@
 # GeoSim FUTO
 
-**GeoSim FUTO** is a Generative AI-enhanced GIS project for 3D terrain reconstruction, environmental vulnerability mapping, and scenario-based inundation simulation around the Federal University of Technology Owerri (FUTO), Nigeria.
-
-The project combines geospatial interpolation, terrain analysis, weighted flood susceptibility modeling, interactive 3D visualization, and data-grounded Generative AI scene prompting in a single end-to-end workflow.
+**Terrain Interpolation & Environmental Change Simulation**  
+*Federal University of Technology Owerri (FUTO), Imo State, Nigeria*
 
 ---
 
 ## Overview
 
-This project was developed as a learning-driven GIS and data science workflow using real elevation point data from locations around FUTO and nearby communities. The study reconstructs terrain from sparse sampled points, analyzes surface characteristics, identifies environmentally vulnerable zones, simulates inundation scenarios, and translates GIS outputs into immersive scene prompts for future AR/VR-style visualization.
+GeoSim FUTO reconstructs a continuous terrain surface from 11 sparse ground-based elevation
+survey points collected across the FUTO campus and five surrounding communities. It applies
+spatial interpolation, slope analysis, terrain classification, flood susceptibility mapping,
+and scenario-based inundation modelling — then bridges those GIS outputs into structured
+**Generative AI scene prompts** for immersive AR/VR environmental visualisation.
 
-Rather than using Generative AI to invent terrain, the project uses real GIS-derived terrain and environmental metrics as the foundation, while Generative AI is applied as a grounded scene-generation and storytelling layer.
-
----
-
-## Project Aim
-
-To develop a GIS-based environmental modeling workflow that reconstructs terrain from real elevation points, identifies flood-prone zones, simulates environmental change, and integrates Generative AI for immersive geospatial visualization.
-
----
-
-## Objectives
-
-- Organize and analyze real-world elevation point data around FUTO
-- Compare interpolation methods for terrain reconstruction
-- Select the most suitable interpolation method using validation
-- Derive terrain products such as contours, slope, and terrain classes
-- Build a flood susceptibility model using weighted overlay
-- Simulate mild, moderate, and severe inundation scenarios
-- Create interactive 3D terrain and environmental risk visualizations
-- Generate data-grounded AI prompts for immersive environmental scene design
-
----
-
-## Study Area
-
-The study area covers locations around the Federal University of Technology Owerri (FUTO), including surrounding communities such as Eziobodo, Obinze, Avu, Nekede, and Ihiagwa in Imo State, Nigeria.
-
----
-
-## Dataset
-
-The project uses sparse elevation survey points with the following attributes:
-
-- Point ID
-- Longitude
-- Latitude
-- Elevation (m)
-- Location name
-
-These measured points were used as the basis for terrain interpolation and subsequent environmental analysis.
-
----
-
-## Methodology
-
-The workflow followed these major stages:
-
-1. **Data loading and cleaning**  
-   Elevation point data was structured into a clean tabular format.
-
-2. **Interpolation comparison and validation**  
-   Four interpolation methods were compared:
-   - Nearest Neighbor
-   - Linear
-   - Cubic
-   - Inverse Distance Weighting (IDW)
-
-   Leave-One-Out Cross-Validation (LOOCV) was used to assess prediction reliability. IDW was selected as the most practical method because it provided complete prediction coverage and stable performance for the sparse dataset.
-
-3. **Terrain analysis**  
-   The selected IDW surface was used to generate:
-   - Contour map
-   - Slope map
-   - Terrain classification map
-
-4. **Flood susceptibility mapping**  
-   A weighted overlay approach combined:
-   - Elevation vulnerability
-   - Slope vulnerability
-   - Terrain-class vulnerability
-
-   This produced both continuous and classified flood susceptibility layers.
-
-5. **Scenario-based environmental simulation**  
-   Mild, moderate, and severe inundation scenarios were created using terrain-based water-level thresholds to simulate how increasing inundation could affect the study area.
-
-6. **Interactive 3D visualization**  
-   Plotly was used to create interactive browser-based 3D terrain and flood-risk scenes.
-
-7. **Generative AI integration**  
-   GIS-derived environmental outputs were translated into:
-   - Semantic scene zones
-   - Data-grounded AI scene prompts
-   - Narrative summaries for communication and immersive visualization planning
-
----
-
-## Key Results
-
-The project produced:
-
-- Interpolation comparison in 2D and 3D
-- Validation table for interpolation method selection
-- IDW-based terrain surface
-- Contour map
-- Slope map
-- Terrain classification map
-- Flood susceptibility map
-- Classified flood susceptibility zones
-- Scenario-based inundation simulation
-- Interactive 3D terrain and flood-risk HTML outputs
-- Semantic scene zoning for generative visualization
-- Data-grounded Generative AI prompts
-- Project narrative and abstract
-
----
-
-## Generative AI Layer
-
-The Generative AI component of this project does not replace GIS analysis. Instead, it uses GIS-derived terrain, scene zoning, susceptibility patterns, and scenario metrics to generate grounded prompts for immersive environmental visualization.
-
-This makes the AI layer:
-- evidence-based
-- geographically informed
-- suitable for future AR/VR-style applications
-- useful for environmental storytelling and presentation
+The project demonstrates how real geospatial data, environmental analysis, and Generative AI
+can be combined into a single reproducible spatial workflow.
 
 ---
 
 ## Project Structure
 
-```text
+```
 geosim-futo/
 ├── README.md
 ├── requirements.txt
 ├── .gitignore
+├── LICENSE
+│
 ├── data/
 │   ├── raw/
-│   │   └── futo_elevation_points.csv
+│   │   └── futo_elevation_points.csv           # 11 VES survey stations
 │   └── processed/
+│       ├── interpolation_validation_results.csv
+│       ├── futo_terrain_grid.csv               # IDW surface (150 × 150 grid)
+│       ├── terrain_class_grid.csv              # Lowland / Midland / Highland
+│       ├── flood_susceptibility_grid.csv       # Risk index + classified zone
+│       └── scenario_summary.csv               # Mild / Moderate / Severe stats
+│
 ├── notebooks/
-│   └── 00_geosim_futo_full_workflow.ipynb
+│   ├── 01_data_loading_and_cleaning.ipynb
+│   ├── 02_interpolation_comparison_and_validation.ipynb
+│   ├── 03_terrain_analysis.ipynb
+│   ├── 04_flood_susceptibility_mapping.ipynb
+│   ├── 05_scenario_simulation.ipynb
+│   └── 06_genai_scene_pipeline.ipynb
+│
 ├── src/
+│   ├── __init__.py
+│   ├── data_processing.py     # Dataset loading and grid creation
+│   ├── interpolation.py       # IDW + griddata methods + LOO cross-validation
+│   ├── terrain_analysis.py    # Slope computation and terrain classification
+│   ├── susceptibility.py      # Flood susceptibility weighted overlay
+│   ├── simulation.py          # Inundation scenarios and semantic scene zones
+│   ├── genai_pipeline.py      # AI scene prompts, project narrative, abstract
+│   └── visualization.py       # Static (Matplotlib) and interactive (Plotly) plots
+│
 ├── outputs/
-│   ├── figures/
-│   ├── reports/
-│   └── tables/
+│   ├── figures/               # 9 exported PNG maps
+│   ├── reports/               # Narrative, abstract, scene prompts (.txt)
+│   └── tables/                # zone_stats.csv, project_metrics.json, scene_prompts.json
+│
 ├── app/
-│   └── web/
+│   └── web/                   # 3 interactive Plotly HTML visualisations
+│
 └── docs/
+    ├── methodology.md
+    ├── results_summary.md
+    └── project_scope.md
+```
+
+---
+
+## Quick Start
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/your-username/geosim-futo.git
+cd geosim-futo
+```
+
+### 2. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Run the notebooks in order
+
+```bash
+jupyter notebook notebooks/
+```
+
+Open and run notebooks `01` through `06` in sequence.
+
+### 4. Or use the src modules directly
+
+```python
+import sys
+sys.path.insert(0, 'src')
+
+from data_processing import load_survey_data, prepare_grid
+from interpolation import run_all_interpolations
+from terrain_analysis import compute_slope, classify_terrain
+from susceptibility import compute_flood_susceptibility, classify_flood_risk
+from simulation import build_inundation_scenarios, build_scene_zones
+from genai_pipeline import build_all_scene_prompts
+
+# Load the 11-point survey dataset and build a 150×150 interpolation grid
+df = load_survey_data()
+x, y, z = df['longitude'].values, df['latitude'].values, df['elevation_m'].values
+grid_x, grid_y = prepare_grid(x, y)
+
+# Run all four interpolation methods; IDW is selected downstream
+surfaces = run_all_interpolations(x, y, z, grid_x, grid_y)
+idw_surface = surfaces['IDW']
+
+# Terrain → flood susceptibility → scenarios
+slope_degrees, _, _ = compute_slope(idw_surface, grid_x, grid_y)
+terrain_class, _, _ = classify_terrain(idw_surface)
+flood_susceptibility = compute_flood_susceptibility(idw_surface, slope_degrees, terrain_class)
+risk_class, _, _ = classify_flood_risk(flood_susceptibility)
+summary_df, masks = build_inundation_scenarios(idw_surface)
+```
+
+---
+
+## Methodology Summary
+
+### 1 · Spatial Interpolation
+Four methods were implemented and evaluated on the 11 survey points using **leave-one-out
+cross-validation**:
+
+| Method | RMSE (m) | Valid Predictions |
+|---|---|---|
+| Nearest Neighbour | 23.86 | 11 / 11 |
+| Linear (Delaunay) | 15.59 | 7 / 11 |
+| Cubic Spline | 14.58 | 7 / 11 |
+| **IDW** *(selected)* | **20.94** | **11 / 11** |
+
+**IDW was selected** because it is the only method achieving complete spatial coverage
+(11 / 11 valid predictions). Cubic and Linear had lower RMSE but failed to predict 4 out of
+11 held-out points due to the sparse, non-uniform distribution of the survey network.
+
+### 2 · Terrain Analysis
+- **Slope** computed via `numpy.gradient` with degree-to-metre conversion
+- **Terrain classification** split at the 33rd and 66th elevation percentiles:
+  Lowland (≤ 189.7 m), Midland (189.7–198.1 m), Highland (> 198.1 m)
+
+### 3 · Flood Susceptibility
+Weighted overlay of three normalised vulnerability factors:
+
+```
+Flood Susceptibility = 0.45 × elevation_vuln
+                     + 0.35 × slope_vuln
+                     + 0.20 × terrain_class_vuln
+```
+
+### 4 · Inundation Scenarios
+Water-level thresholds derived from IDW surface percentiles:
+
+| Scenario | Water Level (m) | Area Flooded |
+|---|---|---|
+| Mild | 186.37 | 25% |
+| Moderate | 192.09 | 40% |
+| Severe | 195.98 | 55% |
+
+### 5 · Generative AI Pipeline
+GIS-derived metrics, zone statistics, and scenario outputs are encoded into structured prompts
+for AR/VR-ready 3D scene generation — one prompt per inundation scenario.
+
+---
+
+## Key Results
+
+| Metric | Value |
+|---|---|
+| Interpolation method selected | IDW (power = 2) |
+| Elevation range | 159 m – 229 m |
+| Mean elevation | 193.37 m |
+| Mean slope | 0.35° |
+| Dominant terrain class | Highland |
+| High flood risk coverage | 34% of study area |
+| Moderate scenario inundation | 40% at water level 192.09 m |
+
+---
+
+## Outputs
+
+| Type | Location | Count |
+|---|---|---|
+| PNG maps | `outputs/figures/` | 9 |
+| Interactive HTML | `app/web/` | 3 |
+| Text reports | `outputs/reports/` | 3 |
+| CSV / JSON tables | `outputs/tables/` | 3 |
+| Processed data CSVs | `data/processed/` | 5 |
+
+---
+
+## Tech Stack
+
+| Tool | Purpose |
+|---|---|
+| Python 3.10+ | Core language |
+| NumPy | Grid computation and array operations |
+| Pandas | Tabular data management |
+| SciPy | Linear, Cubic, and Nearest interpolation |
+| Matplotlib | All static map outputs |
+| Plotly | Interactive 3D visualisations |
+| Jupyter | Notebook-based workflow |
+
+---
+
+## Documentation
+
+- [Methodology](docs/methodology.md) — Step-by-step technical approach
+- [Results Summary](docs/results_summary.md) — Key findings and full output inventory
+- [Project Scope](docs/project_scope.md) — Objectives, deliverables, and limitations
+
+---
+
+## License
+
+MIT License — see [LICENSE](LICENSE) for details.
