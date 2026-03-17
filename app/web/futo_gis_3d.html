@@ -1,1 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoSim 3D — FUTO Geospatial Terrain System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
 
+  :root {
+    --bg: #050a0f;
+    --panel: #0a1520;
+    --border: #1a3a5c;
+    --accent: #00d4ff;
+    --accent2: #00ff9d;
+    --accent3: #ff6b35;
+    --warn: #ffb347;
+    --text: #c8e0f0;
+    --dim: #4a7a9b;
+    --red: #ff4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  #canvas-container {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  canvas { display: block; }
+
+  /* TOP BAR */
+  #topbar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 52px;
+    background: linear-gradient(90deg, rgba(5,10,15,0.98), rgba(10,21,32,0.95));
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 24px;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+  }
+
+  #topbar .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  #topbar .logo span { color: var(--accent2); }
+
+  .tag {
+    font-size: 9px;
+    padding: 2px 8px;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 2px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .separator { flex: 1; }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent2);
+    box-shadow: 0 0 8px var(--accent2);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .coord-display {
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 1px;
+  }
+  .coord-display span { color: var(--accent2); }
+
+  /* LEFT PANEL */
+  #left-panel {
+    position: absolute;
+    top: 62px; left: 12px; bottom: 12px;
+    width: 270px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .panel-card {
+    background: rgba(10, 21, 32, 0.92);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+    backdrop-filter: blur(12px);
+  }
+
+  .panel-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-title::before {
+    content: '';
+    width: 3px; height: 3px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 6px var(--accent);
+  }
+
+  /* VES POINTS LIST */
+  .ves-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 10px;
+  }
+
+  .ves-item:hover { background: rgba(0,212,255,0.08); }
+  .ves-item.active { background: rgba(0,212,255,0.12); border-left: 2px solid var(--accent); }
+
+  .ves-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .ves-name { flex: 1; color: var(--text); }
+  .ves-elev { color: var(--accent2); font-size: 9px; }
+
+  /* SIMULATION CONTROLS */
+  .sim-control { margin-bottom: 14px; }
+
+  .sim-label {
+    font-size: 9px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .sim-label span { color: var(--warn); }
+
+  input[type=range] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    cursor: pointer;
+  }
+
+  .btn-group { display: flex; gap: 8px; margin-top: 12px; }
+
+  .btn {
+    flex: 1;
+    padding: 8px 4px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border-radius: 3px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+
+  .btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.05); }
+  .btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .btn.danger { border-color: var(--accent3); color: var(--accent3); }
+  .btn.danger:hover { background: rgba(255,107,53,0.1); }
+
+  /* RIGHT PANEL */
+  #right-panel {
+    position: absolute;
+    top: 62px; right: 12px; bottom: 12px;
+    width: 240px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* ELEVATION LEGEND */
+  .legend-bar {
+    height: 12px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #1a6b9a, #27a766, #f0c419, #e05a1a, #c0392b);
+    margin: 8px 0 4px;
+  }
+
+  .legend-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: var(--dim);
+  }
+
+  /* STATS */
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(26,58,92,0.4);
+    font-size: 10px;
+  }
+
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row .val { color: var(--accent2); font-weight: 700; }
+
+  /* ENV SCENARIO BUTTONS */
+  .scenario-btn {
+    width: 100%;
+    padding: 9px 12px;
+    margin-bottom: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 3px;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .scenario-btn:hover { border-color: var(--accent); background: rgba(0,212,255,0.05); }
+  .scenario-btn.running { border-color: var(--accent3); color: var(--accent3); animation: borderPulse 1.5s infinite; }
+  .scenario-btn.active-scenario { border-color: var(--accent2); color: var(--accent2); }
+
+  @keyframes borderPulse {
+    0%, 100% { border-color: var(--accent3); box-shadow: none; }
+    50% { border-color: var(--accent3); box-shadow: 0 0 12px rgba(255,107,53,0.3); }
+  }
+
+  .scenario-icon { font-size: 14px; }
+
+  /* BOTTOM INFO BAR */
+  #bottom-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 32px;
+    background: rgba(5,10,15,0.95);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 30px;
+    z-index: 10;
+    font-size: 9px;
+    color: var(--dim);
+    letter-spacing: 1px;
+  }
+
+  #bottom-bar span { color: var(--text); }
+
+  /* TOOLTIP */
+  #tooltip {
+    position: absolute;
+    background: rgba(5,10,15,0.95);
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    padding: 10px 14px;
+    font-size: 10px;
+    pointer-events: none;
+    z-index: 20;
+    display: none;
+    min-width: 180px;
+    box-shadow: 0 0 20px rgba(0,212,255,0.15);
+  }
+
+  #tooltip .tt-title {
+    font-family: 'Syne', sans-serif;
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  #tooltip .tt-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 3px;
+    color: var(--dim);
+  }
+
+  #tooltip .tt-row span { color: var(--accent2); }
+
+  /* LOADING SCREEN */
+  #loading {
+    position: absolute;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+
+  #loading .load-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  #loading .load-sub {
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 3px;
+    margin-bottom: 40px;
+  }
+
+  .load-bar-outer {
+    width: 300px;
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+
+  .load-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    animation: loadProgress 2s ease forwards;
+  }
+
+  @keyframes loadProgress {
+    from { width: 0; }
+    to { width: 100%; }
+  }
+
+  #loading .load-status {
+    font-size: 9px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    animation: fadeStatus 2s infinite;
+  }
+
+  @keyframes fadeStatus {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* AI INSIGHT PANEL */
+  #ai-insight {
+    position: absolute;
+    bottom: 42px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10,21,32,0.96);
+    border: 1px solid var(--accent2);
+    border-radius: 4px;
+    padding: 12px 20px;
+    max-width: 500px;
+    z-index: 15;
+    display: none;
+    box-shadow: 0 0 30px rgba(0,255,157,0.1);
+  }
+
+  #ai-insight .ai-label {
+    font-size: 8px;
+    color: var(--accent2);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  #ai-insight .ai-text {
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .close-insight {
+    position: absolute;
+    top: 8px; right: 10px;
+    background: none;
+    border: none;
+    color: var(--dim);
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  /* SCROLLBAR */
+  .ves-list { max-height: 200px; overflow-y: auto; }
+  .ves-list::-webkit-scrollbar { width: 3px; }
+  .ves-list::-webkit-scrollbar-track { background: transparent; }
+  .ves-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="load-title">GeoSim<span style="color:var(--accent2)">3D</span></div>
+  <div class="load-sub">FUTO Geospatial Terrain System · Owerri, Nigeria</div>
+  <div class="load-bar-outer"><div class="load-bar-inner"></div></div>
+  <div class="load-status" id="load-status">Initializing terrain mesh...</div>
+</div>
+
+<div id="canvas-container"></div>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div class="logo">Geo<span>Sim</span> 3D</div>
+  <div class="tag">AR/VR Terrain</div>
+  <div class="tag" style="border-color:var(--accent2);color:var(--accent2)">FUTO · Owerri</div>
+  <div class="separator"></div>
+  <div class="coord-display">LAT <span id="lat-display">5.416°N</span> &nbsp; LON <span id="lon-display">7.008°E</span></div>
+  <div class="coord-display">ELEV <span id="elev-display">—</span></div>
+  <div class="status-dot"></div>
+  <div style="font-size:9px;color:var(--dim)">LIVE SIM</div>
+</div>
+
+<!-- LEFT PANEL -->
+<div id="left-panel">
+  <div class="panel-card">
+    <div class="panel-title">VES Survey Points</div>
+    <div class="ves-list" id="ves-list"></div>
+  </div>
+
+  <div class="panel-card">
+    <div class="panel-title">Simulation Controls</div>
+    <div class="sim-control">
+      <div class="sim-label">Water Level Rise <span id="water-val">0m</span></div>
+      <input type="range" id="water-slider" min="0" max="40" value="0" step="0.5">
+    </div>
+    <div class="sim-control">
+      <div class="sim-label">Terrain Exaggeration <span id="exag-val">2×</span></div>
+      <input type="range" id="exag-slider" min="1" max="8" value="2" step="0.1">
+    </div>
+    <div class="sim-control">
+      <div class="sim-label">Erosion Intensity <span id="erosion-val">0%</span></div>
+      <input type="range" id="erosion-slider" min="0" max="100" value="0" step="1">
+    </div>
+    <div class="btn-group">
+      <button class="btn active" id="btn-terrain" onclick="setView('terrain')">Terrain</button>
+      <button class="btn" id="btn-elev" onclick="setView('elevation')">Elev Map</button>
+      <button class="btn" id="btn-wire" onclick="setView('wireframe')">Wire</button>
+    </div>
+    <div class="btn-group">
+      <button class="btn" onclick="resetCamera()">Reset Cam</button>
+      <button class="btn danger" onclick="resetAll()">Reset Sim</button>
+    </div>
+  </div>
+</div>
+
+<!-- RIGHT PANEL -->
+<div id="right-panel">
+  <div class="panel-card">
+    <div class="panel-title">Elevation Index</div>
+    <div class="legend-bar"></div>
+    <div class="legend-labels">
+      <span>159m</span><span>185m</span><span>210m</span><span>229m</span>
+    </div>
+  </div>
+
+  <div class="panel-card">
+    <div class="panel-title">Dataset Stats</div>
+    <div class="stat-row"><div>Survey Points</div><div class="val">11</div></div>
+    <div class="stat-row"><div>Min Elevation</div><div class="val">159m</div></div>
+    <div class="stat-row"><div>Max Elevation</div><div class="val">229m</div></div>
+    <div class="stat-row"><div>Mean Elevation</div><div class="val">193m</div></div>
+    <div class="stat-row"><div>Elev Range</div><div class="val">70m</div></div>
+    <div class="stat-row"><div>Area Coverage</div><div class="val">~18 km²</div></div>
+  </div>
+
+  <div class="panel-card">
+    <div class="panel-title">Environmental Scenarios</div>
+    <button class="scenario-btn" id="sc-flood" onclick="runScenario('flood')">
+      <span class="scenario-icon">🌊</span> Flash Flood Simulation
+    </button>
+    <button class="scenario-btn" id="sc-drought" onclick="runScenario('drought')">
+      <span class="scenario-icon">☀️</span> Drought Stress Model
+    </button>
+    <button class="scenario-btn" id="sc-urbanize" onclick="runScenario('urbanize')">
+      <span class="scenario-icon">🏙️</span> Urban Expansion
+    </button>
+    <button class="scenario-btn" id="sc-subsidence" onclick="runScenario('subsidence')">
+      <span class="scenario-icon">⬇️</span> Land Subsidence
+    </button>
+    <button class="scenario-btn" id="sc-reset" onclick="runScenario('reset')" style="border-color:var(--dim);color:var(--dim)">
+      <span class="scenario-icon">↺</span> Clear All Scenarios
+    </button>
+  </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div id="bottom-bar">
+  <div>DRAG: Orbit &nbsp;|&nbsp; SCROLL: Zoom &nbsp;|&nbsp; RIGHT-DRAG: Pan &nbsp;|&nbsp; CLICK: Inspect Point</div>
+  <div class="separator"></div>
+  <div>CRS: WGS84 (EPSG:4326)</div>
+  <div>INTERP: IDW</div>
+  <div>MESH: 80×80</div>
+  <div id="sim-status" style="color:var(--accent2)">READY</div>
+</div>
+
+<!-- TOOLTIP -->
+<div id="tooltip">
+  <div class="tt-title" id="tt-title">VES 1</div>
+  <div class="tt-row">Location <span id="tt-loc">—</span></div>
+  <div class="tt-row">Elevation <span id="tt-elev">—</span></div>
+  <div class="tt-row">Longitude <span id="tt-lon">—</span></div>
+  <div class="tt-row">Latitude <span id="tt-lat">—</span></div>
+</div>
+
+<!-- AI INSIGHT -->
+<div id="ai-insight">
+  <button class="close-insight" onclick="closeInsight()">✕</button>
+  <div class="ai-label">⬡ GeoAI Insight</div>
+  <div class="ai-text" id="ai-text"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// =============================================
+// VES DATASET — FUTO AREA, OWERRI, NIGERIA
+// =============================================
+const VES_DATA = [
+  { id:'VES 1',  lon:7.016667, lat:5.366667, elev:177, loc:'Church, Eziobodo' },
+  { id:'VES 2',  lon:7.000000, lat:5.366667, elev:210, loc:'Girls Sec. School, Eziobodo' },
+  { id:'VES 3',  lon:6.983333, lat:5.433333, elev:178, loc:'Gas Plant, Avu' },
+  { id:'VES 4',  lon:6.983333, lat:5.400000, elev:185, loc:'FUTO Road, Obinze' },
+  { id:'VES 5',  lon:6.966667, lat:5.416667, elev:170, loc:'Church, Obinze' },
+  { id:'VES 6',  lon:7.000000, lat:5.433333, elev:216, loc:'Micoh Guest House, Nekede' },
+  { id:'VES 7',  lon:7.016667, lat:5.400000, elev:197, loc:'Magistrate Court, Ihiagwa' },
+  { id:'VES 8',  lon:7.050000, lat:5.450000, elev:229, loc:'Industrial Cluster, Nekede' },
+  { id:'VES 9',  lon:6.950000, lat:5.433333, elev:159, loc:'Primary School, Avu' },
+  { id:'VES 10', lon:7.000000, lat:5.400000, elev:210, loc:'Umuchimma Village, Ihiagwa' },
+  { id:'VES 11', lon:7.000000, lat:5.383333, elev:194, loc:'Behind Geology Building, FUTO' },
+];
+
+// Elevation color scale
+function elevColor(t) {
+  const colors = [
+    [0.10, 0.42, 0.60],  // deep blue
+    [0.15, 0.65, 0.40],  // green
+    [0.94, 0.77, 0.10],  // yellow
+    [0.88, 0.35, 0.10],  // orange
+    [0.75, 0.22, 0.17],  // red
+  ];
+  t = Math.max(0, Math.min(1, t));
+  const scaled = t * (colors.length - 1);
+  const i = Math.floor(scaled);
+  const f = scaled - i;
+  const c0 = colors[Math.min(i, colors.length-1)];
+  const c1 = colors[Math.min(i+1, colors.length-1)];
+  return new THREE.Color(
+    c0[0]+(c1[0]-c0[0])*f,
+    c0[1]+(c1[1]-c0[1])*f,
+    c0[2]+(c1[2]-c0[2])*f
+  );
+}
+
+// =============================================
+// IDW INTERPOLATION
+// Inverse Distance Weighting — GIS standard method
+// to estimate values between known sample points
+// =============================================
+function idwInterpolate(lon, lat, power=2) {
+  let weightSum = 0, valueSum = 0;
+  for (const p of VES_DATA) {
+    const dx = lon - p.lon, dy = lat - p.lat;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 1e-10) return p.elev;
+    const w = 1 / Math.pow(dist, power);
+    weightSum += w;
+    valueSum += w * p.elev;
+  }
+  return valueSum / weightSum;
+}
+
+// =============================================
+// THREE.JS SETUP
+// =============================================
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x050a0f);
+scene.fog = new THREE.Fog(0x050a0f, 200, 600);
+
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 2000);
+camera.position.set(0, 120, 200);
+camera.lookAt(0, 0, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+// Lights
+const ambientLight = new THREE.AmbientLight(0x2a4a6a, 0.8);
+scene.add(ambientLight);
+
+const sunLight = new THREE.DirectionalLight(0xffd0a0, 1.2);
+sunLight.position.set(80, 120, 60);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 2048;
+sunLight.shadow.mapSize.height = 2048;
+scene.add(sunLight);
+
+const fillLight = new THREE.DirectionalLight(0x4080ff, 0.3);
+fillLight.position.set(-60, 40, -40);
+scene.add(fillLight);
+
+// Stars background
+const starGeo = new THREE.BufferGeometry();
+const starVerts = [];
+for (let i = 0; i < 3000; i++) {
+  starVerts.push((Math.random()-0.5)*2000, (Math.random()-0.5)*2000, (Math.random()-0.5)*2000);
+}
+starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVerts, 3));
+const starMat = new THREE.PointsMaterial({ color: 0x445566, size: 0.8 });
+scene.add(new THREE.Points(starGeo, starMat));
+
+// =============================================
+// BUILD TERRAIN MESH
+// =============================================
+const GRID = 80;
+const WORLD_SIZE = 160;
+
+// Coordinate bounds from data
+const lonMin = 6.945, lonMax = 7.055;
+const latMin = 5.360, latMax = 5.460;
+const elevMin = 159, elevMax = 229;
+
+let elevData = []; // store for re-use
+let baseElevData = [];
+
+function buildTerrain(exaggeration = 2, erosionFactor = 0) {
+  elevData = [];
+  const geo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, GRID-1, GRID-1);
+  geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position;
+
+  for (let i = 0; i < GRID; i++) {
+    for (let j = 0; j < GRID; j++) {
+      const idx = i * GRID + j;
+      const lon = lonMin + (j / (GRID-1)) * (lonMax - lonMin);
+      const lat = latMin + (i / (GRID-1)) * (latMax - latMin);
+      let elev = idwInterpolate(lon, lat);
+
+      // Apply erosion noise
+      if (erosionFactor > 0) {
+        const noise = (Math.sin(j*0.3)*Math.cos(i*0.4) + Math.sin(j*0.7+i*0.5)) * erosionFactor * 0.08;
+        elev += noise;
+      }
+
+      elevData.push(elev);
+      const t = (elev - elevMin) / (elevMax - elevMin);
+      const y = (t - 0.5) * 30 * exaggeration;
+      pos.setY(idx, y);
+    }
+  }
+
+  if (baseElevData.length === 0) baseElevData = [...elevData];
+
+  geo.computeVertexNormals();
+
+  // Apply elevation colors
+  const colors = [];
+  for (let i = 0; i < pos.count; i++) {
+    const t = (elevData[i] - elevMin) / (elevMax - elevMin);
+    const c = elevColor(t);
+    colors.push(c.r, c.g, c.b);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+  return geo;
+}
+
+let currentMode = 'terrain';
+let terrainMesh, wireframeMesh, waterMesh;
+
+function createTerrain(exaggeration, erosion) {
+  if (terrainMesh) { scene.remove(terrainMesh); terrainMesh.geometry.dispose(); }
+  if (wireframeMesh) { scene.remove(wireframeMesh); wireframeMesh.geometry.dispose(); }
+
+  const geo = buildTerrain(exaggeration, erosion);
+
+  const mat = new THREE.MeshPhongMaterial({
+    vertexColors: true,
+    shininess: 20,
+    specular: new THREE.Color(0x223344),
+  });
+
+  terrainMesh = new THREE.Mesh(geo, mat);
+  terrainMesh.receiveShadow = true;
+  terrainMesh.castShadow = true;
+  scene.add(terrainMesh);
+
+  // Wireframe overlay
+  const wireMat = new THREE.MeshBasicMaterial({
+    color: 0x00d4ff,
+    wireframe: true,
+    transparent: true,
+    opacity: currentMode === 'wireframe' ? 0.25 : 0,
+  });
+  wireframeMesh = new THREE.Mesh(geo.clone(), wireMat);
+  wireframeMesh.position.y = 0.05;
+  scene.add(wireframeMesh);
+
+  updateViewMode();
+}
+
+function setView(mode) {
+  currentMode = mode;
+  document.querySelectorAll('#btn-terrain,#btn-elev,#btn-wire').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-'+mode).classList.add('active');
+  updateViewMode();
+}
+
+function updateViewMode() {
+  if (!terrainMesh) return;
+  if (currentMode === 'terrain') {
+    terrainMesh.material.vertexColors = true;
+    terrainMesh.material.color = new THREE.Color(1,1,1);
+    terrainMesh.material.needsUpdate = true;
+    if (wireframeMesh) wireframeMesh.material.opacity = 0;
+  } else if (currentMode === 'elevation') {
+    terrainMesh.material.vertexColors = true;
+    terrainMesh.material.color = new THREE.Color(1,1,1);
+    terrainMesh.material.needsUpdate = true;
+    if (wireframeMesh) wireframeMesh.material.opacity = 0.08;
+  } else if (currentMode === 'wireframe') {
+    terrainMesh.material.vertexColors = false;
+    terrainMesh.material.color = new THREE.Color(0.05, 0.15, 0.2);
+    terrainMesh.material.needsUpdate = true;
+    if (wireframeMesh) wireframeMesh.material.opacity = 0.35;
+  }
+}
+
+// Water plane
+function createWaterPlane(level) {
+  if (waterMesh) scene.remove(waterMesh);
+  if (level <= 0) return;
+
+  const wGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, 1, 1);
+  wGeo.rotateX(-Math.PI / 2);
+
+  // water y level
+  const t = (elevMin + level - elevMin) / (elevMax - elevMin);
+  const waterY = (t - 0.5) * 30 * parseFloat(document.getElementById('exag-slider').value);
+
+  const wMat = new THREE.MeshPhongMaterial({
+    color: 0x0066aa,
+    transparent: true,
+    opacity: 0.55,
+    shininess: 100,
+    specular: new THREE.Color(0x88ddff),
+  });
+
+  waterMesh = new THREE.Mesh(wGeo, wMat);
+  waterMesh.position.y = waterY;
+  scene.add(waterMesh);
+}
+
+// =============================================
+// VES POINT MARKERS
+// =============================================
+const markerGroup = new THREE.Group();
+scene.add(markerGroup);
+
+const markerObjects = [];
+
+function lonLatToWorld(lon, lat) {
+  const nx = ((lon - lonMin) / (lonMax - lonMin) - 0.5) * WORLD_SIZE;
+  const nz = ((lat - latMin) / (latMax - latMin) - 0.5) * WORLD_SIZE;
+  return { x: nx, z: nz };
+}
+
+function buildMarkers(exaggeration) {
+  markerGroup.clear();
+  markerObjects.length = 0;
+
+  VES_DATA.forEach((p, i) => {
+    const { x, z } = lonLatToWorld(p.lon, p.lat);
+    const t = (p.elev - elevMin) / (elevMax - elevMin);
+    const y = (t - 0.5) * 30 * exaggeration + 1.5;
+
+    const geo = new THREE.CylinderGeometry(0, 1.2, 3.5, 6);
+    const mat = new THREE.MeshPhongMaterial({ color: 0x00ffcc, emissive: 0x003322, shininess: 80 });
+    const marker = new THREE.Mesh(geo, mat);
+    marker.position.set(x, y, z);
+    marker.userData = { ves: p };
+    markerGroup.add(marker);
+    markerObjects.push(marker);
+
+    // Vertical line
+    const lineGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(x, y-3, z),
+      new THREE.Vector3(x, y-20, z)
+    ]);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.3 });
+    markerGroup.add(new THREE.Line(lineGeo, lineMat));
+
+    // Glow ring
+    const ringGeo = new THREE.RingGeometry(1.5, 2.5, 16);
+    ringGeo.rotateX(-Math.PI/2);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc, side: THREE.DoubleSide, transparent: true, opacity: 0.4 });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.position.set(x, y-3, z);
+    markerGroup.add(ring);
+  });
+}
+
+// Grid lines
+function buildGrid() {
+  const gridHelper = new THREE.GridHelper(WORLD_SIZE, 20, 0x1a3a5c, 0x0d1e2e);
+  gridHelper.position.y = -16;
+  scene.add(gridHelper);
+
+  // Compass rose
+  const arrowDir = new THREE.Vector3(0, 0, -1);
+  const arrowOrigin = new THREE.Vector3(-70, -14, 70);
+  const arrowHelper = new THREE.ArrowHelper(arrowDir, arrowOrigin, 12, 0x00d4ff, 4, 3);
+  scene.add(arrowHelper);
+}
+
+buildGrid();
+
+// =============================================
+// ORBIT CONTROLS (manual)
+// =============================================
+let isDragging = false;
+let isRightDrag = false;
+let lastMouse = { x: 0, y: 0 };
+let spherical = { theta: 0.3, phi: 0.9, r: 250 };
+let panOffset = { x: 0, y: 0 };
+
+function updateCamera() {
+  const x = spherical.r * Math.sin(spherical.phi) * Math.sin(spherical.theta) + panOffset.x;
+  const y = spherical.r * Math.cos(spherical.phi);
+  const z = spherical.r * Math.sin(spherical.phi) * Math.cos(spherical.theta);
+  camera.position.set(x, y, z);
+  camera.lookAt(panOffset.x, 0, 0);
+}
+
+document.addEventListener('mousedown', e => {
+  isDragging = true;
+  isRightDrag = e.button === 2;
+  lastMouse = { x: e.clientX, y: e.clientY };
+});
+
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+document.addEventListener('mouseup', () => { isDragging = false; });
+
+document.addEventListener('mousemove', e => {
+  const tooltip = document.getElementById('tooltip');
+  tooltip.style.left = (e.clientX + 16) + 'px';
+  tooltip.style.top = (e.clientY - 20) + 'px';
+
+  if (!isDragging) return;
+  const dx = e.clientX - lastMouse.x;
+  const dy = e.clientY - lastMouse.y;
+  lastMouse = { x: e.clientX, y: e.clientY };
+
+  if (isRightDrag) {
+    panOffset.x -= dx * 0.15;
+  } else {
+    spherical.theta -= dx * 0.005;
+    spherical.phi = Math.max(0.15, Math.min(1.4, spherical.phi + dy * 0.005));
+  }
+  updateCamera();
+});
+
+document.addEventListener('wheel', e => {
+  spherical.r = Math.max(60, Math.min(500, spherical.r + e.deltaY * 0.3));
+  updateCamera();
+});
+
+// Raycasting for hover
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+document.addEventListener('mousemove', e => {
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+});
+
+let lastHovered = null;
+function checkHover() {
+  if (markerObjects.length === 0) return;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(markerObjects);
+  const tooltip = document.getElementById('tooltip');
+
+  if (hits.length > 0) {
+    const p = hits[0].object.userData.ves;
+    if (p) {
+      tooltip.style.display = 'block';
+      document.getElementById('tt-title').textContent = p.id;
+      document.getElementById('tt-loc').textContent = p.loc;
+      document.getElementById('tt-elev').textContent = p.elev + ' m ASL';
+      document.getElementById('tt-lon').textContent = p.lon.toFixed(6) + '°E';
+      document.getElementById('tt-lat').textContent = p.lat.toFixed(6) + '°N';
+      document.getElementById('elev-display').textContent = p.elev + 'm';
+      document.getElementById('lat-display').textContent = p.lat.toFixed(3) + '°N';
+      document.getElementById('lon-display').textContent = p.lon.toFixed(3) + '°E';
+      lastHovered = p;
+
+      // Highlight marker
+      hits[0].object.material.emissive.set(0x00aa66);
+    }
+  } else {
+    tooltip.style.display = 'none';
+    if (lastHovered) {
+      markerObjects.forEach(m => m.material.emissive.set(0x003322));
+      lastHovered = null;
+    }
+  }
+}
+
+// Click to show AI insight
+document.addEventListener('click', e => {
+  if (markerObjects.length === 0) return;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(markerObjects);
+  if (hits.length > 0) {
+    const p = hits[0].object.userData.ves;
+    showInsight(p);
+  }
+});
+
+function showInsight(p) {
+  const t = (p.elev - elevMin) / (elevMax - elevMin);
+  const riskLevel = t < 0.35 ? 'HIGH flood risk' : t < 0.65 ? 'MODERATE flood risk' : 'LOW flood risk';
+  const riskColor = t < 0.35 ? '#ff4444' : t < 0.65 ? '#ffb347' : '#00ff9d';
+
+  const insights = {
+    'VES 1': 'Eziobodo church sits at 177m. Moderate terrain slope toward the south suggests seasonal surface runoff channeling.',
+    'VES 2': 'Girls Secondary School shows elevated ground (210m). This position offers natural protection from flooding in wet seasons.',
+    'VES 3': 'Gas Plant at Avu (178m) requires subsurface monitoring. Proximity to low-lying zones increases contamination risk.',
+    'VES 4': 'FUTO Road Obinze (185m) acts as a transitional zone between Avu lowlands and Ihiagwa uplands.',
+    'VES 5': 'Obinze Church (170m) is the second lowest point. High susceptibility to waterlogging and seasonal flooding.',
+    'VES 6': 'Nekede hilltop (216m) forms a local ridge. Infrastructure here benefits from natural drainage away from foundations.',
+    'VES 7': 'Magistrate Court, Ihiagwa (197m). Administrative zone with stable ground. Minimal erosion risk.',
+    'VES 8': 'Industrial Cluster, Nekede is the HIGHEST point at 229m. Ideal for industrial placement — minimal flood risk and good drainage gradient.',
+    'VES 9': 'Avu Primary School (159m) is the LOWEST sampled point. Significant flood vulnerability and potential groundwater issues.',
+    'VES 10': 'Umuchimma Village Gate (210m). Matches VES 2 elevation — suggests a stable plateau running through Ihiagwa.',
+    'VES 11': 'Behind FUTO Geology Building (194m). Central survey point with moderate elevation and excellent GIS research value.',
+  };
+
+  const text = `<b style="color:${riskColor}">${riskLevel}</b> — ${insights[p.id] || 'Geospatial analysis pending.'}`;
+  document.getElementById('ai-text').innerHTML = text;
+  document.getElementById('ai-insight').style.display = 'block';
+}
+
+function closeInsight() {
+  document.getElementById('ai-insight').style.display = 'none';
+}
+
+// =============================================
+// VES LIST POPULATION
+// =============================================
+function populateVESList() {
+  const list = document.getElementById('ves-list');
+  VES_DATA.forEach((p, i) => {
+    const t = (p.elev - elevMin) / (elevMax - elevMin);
+    const c = elevColor(t);
+    const hex = '#' + c.getHexString();
+    const item = document.createElement('div');
+    item.className = 'ves-item';
+    item.id = 'ves-item-' + i;
+    item.innerHTML = `
+      <div class="ves-dot" style="background:${hex};box-shadow:0 0 6px ${hex}"></div>
+      <div class="ves-name">${p.id}</div>
+      <div class="ves-elev">${p.elev}m</div>
+    `;
+    item.onclick = () => {
+      document.querySelectorAll('.ves-item').forEach(x => x.classList.remove('active'));
+      item.classList.add('active');
+      showInsight(p);
+      focusMarker(i);
+    };
+    list.appendChild(item);
+  });
+}
+
+function focusMarker(i) {
+  const p = VES_DATA[i];
+  const { x, z } = lonLatToWorld(p.lon, p.lat);
+  panOffset.x = x * 0.5;
+  spherical.r = 120;
+  updateCamera();
+}
+
+// =============================================
+// SCENARIO SIMULATIONS
+// =============================================
+let simInterval = null;
+let activeScenario = null;
+
+const scenarios = {
+  flood: { water: 0, target: 25, step: 0.3 },
+  drought: { water: 0, target: 0, step: 0 },
+  urbanize: { water: 0, target: 0, step: 0 },
+  subsidence: { water: 0, target: 5, step: 0.2 },
+};
+
+function runScenario(name) {
+  if (name === 'reset') {
+    clearScenario();
+    return;
+  }
+
+  if (activeScenario === name) {
+    clearScenario();
+    return;
+  }
+
+  clearScenario();
+  activeScenario = name;
+
+  document.getElementById('sc-'+name).classList.add('running');
+  document.getElementById('sim-status').textContent = name.toUpperCase() + ' RUNNING';
+  document.getElementById('sim-status').style.color = 'var(--accent3)';
+
+  const insights = {
+    flood: 'Flash flood scenario initiated. Water level rising +0.3m/step. VES 9 (Avu, 159m) and VES 5 (Obinze, 170m) will be inundated first. Monitor drainage corridors.',
+    drought: 'Drought stress model active. Ground subsidence and crack propagation modeled across low-resistance zones. Vegetation stress zones highlighted.',
+    urbanize: 'Urban expansion simulation: impervious surface growth increases runoff coefficient by ~35%. Green spaces converted to high-reflectance zones.',
+    subsidence: 'Land subsidence alert: pumping or clay compaction causes differential settlement. VES 9 and VES 5 show maximum vulnerability.',
+  };
+
+  document.getElementById('ai-text').innerHTML = insights[name];
+  document.getElementById('ai-insight').style.display = 'block';
+
+  if (name === 'flood') {
+    let w = 0;
+    simInterval = setInterval(() => {
+      w = Math.min(w + 0.3, 28);
+      document.getElementById('water-slider').value = w;
+      document.getElementById('water-val').textContent = w.toFixed(1) + 'm';
+      createWaterPlane(w);
+      if (w >= 28) {
+        clearInterval(simInterval);
+        document.getElementById('sc-'+name).classList.remove('running');
+        document.getElementById('sc-'+name).classList.add('active-scenario');
+        document.getElementById('sim-status').textContent = 'FLOOD COMPLETE';
+        document.getElementById('sim-status').style.color = 'var(--red)';
+      }
+    }, 80);
+  } else if (name === 'subsidence') {
+    let erosion = 0;
+    simInterval = setInterval(() => {
+      erosion = Math.min(erosion + 1, 60);
+      document.getElementById('erosion-slider').value = erosion;
+      document.getElementById('erosion-val').textContent = erosion + '%';
+      createTerrain(parseFloat(document.getElementById('exag-slider').value), erosion);
+      buildMarkers(parseFloat(document.getElementById('exag-slider').value));
+      createWaterPlane(parseFloat(document.getElementById('water-slider').value));
+      if (erosion >= 60) {
+        clearInterval(simInterval);
+        document.getElementById('sc-'+name).classList.remove('running');
+        document.getElementById('sc-'+name).classList.add('active-scenario');
+        document.getElementById('sim-status').textContent = 'SUBSIDENCE COMPLETE';
+      }
+    }, 100);
+  } else if (name === 'drought') {
+    // Tilt the sun and change color tone
+    sunLight.color.set(0xff9944);
+    sunLight.intensity = 2.0;
+    document.getElementById('sc-'+name).classList.remove('running');
+    document.getElementById('sc-'+name).classList.add('active-scenario');
+    document.getElementById('sim-status').textContent = 'DROUGHT ACTIVE';
+    document.getElementById('sim-status').style.color = 'var(--warn)';
+  } else if (name === 'urbanize') {
+    // Turn terrain gray for urban areas
+    if (terrainMesh) {
+      terrainMesh.material.vertexColors = false;
+      terrainMesh.material.color = new THREE.Color(0.3, 0.32, 0.3);
+      terrainMesh.material.needsUpdate = true;
+    }
+    document.getElementById('sc-'+name).classList.remove('running');
+    document.getElementById('sc-'+name).classList.add('active-scenario');
+    document.getElementById('sim-status').textContent = 'URBANIZED';
+    document.getElementById('sim-status').style.color = 'var(--accent)';
+  }
+}
+
+function clearScenario() {
+  if (simInterval) clearInterval(simInterval);
+  simInterval = null;
+  activeScenario = null;
+
+  document.querySelectorAll('.scenario-btn').forEach(b => {
+    b.classList.remove('running', 'active-scenario');
+  });
+
+  // Reset light
+  sunLight.color.set(0xffd0a0);
+  sunLight.intensity = 1.2;
+
+  document.getElementById('sim-status').textContent = 'READY';
+  document.getElementById('sim-status').style.color = 'var(--accent2)';
+}
+
+function resetAll() {
+  clearScenario();
+  document.getElementById('water-slider').value = 0;
+  document.getElementById('exag-slider').value = 2;
+  document.getElementById('erosion-slider').value = 0;
+  document.getElementById('water-val').textContent = '0m';
+  document.getElementById('exag-val').textContent = '2×';
+  document.getElementById('erosion-val').textContent = '0%';
+  createTerrain(2, 0);
+  buildMarkers(2);
+  createWaterPlane(0);
+}
+
+function resetCamera() {
+  spherical = { theta: 0.3, phi: 0.9, r: 250 };
+  panOffset = { x: 0, y: 0 };
+  updateCamera();
+}
+
+// =============================================
+// SLIDERS
+// =============================================
+document.getElementById('water-slider').addEventListener('input', function() {
+  const v = parseFloat(this.value);
+  document.getElementById('water-val').textContent = v.toFixed(1) + 'm';
+  createWaterPlane(v);
+});
+
+document.getElementById('exag-slider').addEventListener('input', function() {
+  const v = parseFloat(this.value);
+  document.getElementById('exag-val').textContent = v.toFixed(1) + '×';
+  createTerrain(v, parseFloat(document.getElementById('erosion-slider').value));
+  buildMarkers(v);
+  createWaterPlane(parseFloat(document.getElementById('water-slider').value));
+});
+
+document.getElementById('erosion-slider').addEventListener('input', function() {
+  const v = parseFloat(this.value);
+  document.getElementById('erosion-val').textContent = v + '%';
+  createTerrain(parseFloat(document.getElementById('exag-slider').value), v);
+  buildMarkers(parseFloat(document.getElementById('exag-slider').value));
+  createWaterPlane(parseFloat(document.getElementById('water-slider').value));
+});
+
+// =============================================
+// ANIMATION LOOP
+// =============================================
+let time = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  time += 0.01;
+
+  // Animate marker rings
+  markerGroup.children.forEach((c, i) => {
+    if (c.type === 'Mesh' && c.geometry.type === 'RingGeometry') {
+      c.material.opacity = 0.2 + 0.2 * Math.sin(time * 2 + i);
+      c.scale.set(1 + 0.1*Math.sin(time*1.5+i), 1, 1 + 0.1*Math.sin(time*1.5+i));
+    }
+    if (c.type === 'Mesh' && c.geometry.type === 'ConeGeometry') {
+      c.position.y += Math.sin(time * 2 + i * 0.7) * 0.015;
+    }
+  });
+
+  // Water shimmer
+  if (waterMesh) {
+    waterMesh.material.opacity = 0.45 + 0.1 * Math.sin(time * 1.5);
+  }
+
+  checkHover();
+  renderer.render(scene, camera);
+}
+
+// =============================================
+// INIT
+// =============================================
+const loadStatuses = [
+  'Initializing terrain mesh...',
+  'Interpolating elevation data (IDW)...',
+  'Building 3D geometry...',
+  'Placing VES survey markers...',
+  'Configuring lighting...',
+  'System ready.',
+];
+
+let loadStep = 0;
+const loadInterval = setInterval(() => {
+  loadStep++;
+  if (loadStep < loadStatuses.length) {
+    document.getElementById('load-status').textContent = loadStatuses[loadStep];
+  }
+  if (loadStep >= loadStatuses.length) {
+    clearInterval(loadInterval);
+    setTimeout(() => {
+      document.getElementById('loading').style.opacity = '0';
+      document.getElementById('loading').style.transition = 'opacity 0.6s';
+      setTimeout(() => document.getElementById('loading').style.display = 'none', 600);
+    }, 300);
+  }
+}, 320);
+
+createTerrain(2, 0);
+buildMarkers(2);
+populateVESList();
+updateCamera();
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
