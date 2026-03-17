@@ -1,1 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FUTO GeoSim — Generative Terrain Intelligence</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap');
 
+  :root {
+    --bg: #050a0f;
+    --panel: #090f16;
+    --border: #0f2035;
+    --accent: #00e5ff;
+    --accent2: #ff6b35;
+    --accent3: #39ff14;
+    --text: #c8dde8;
+    --muted: #3a5068;
+    --elev-low: #1a4a2e;
+    --elev-mid: #5a8a3a;
+    --elev-high: #c8a84b;
+    --elev-peak: #e8c87a;
+    --water: #0066aa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .header-meta {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.6;
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent3);
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* MAIN LAYOUT */
+  .workspace {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* LEFT PANEL */
+  .sidebar {
+    width: 260px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: var(--bg); }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .panel-section {
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+  }
+
+  .panel-title {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  /* VES Points list */
+  .ves-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 0.7rem;
+  }
+
+  .ves-item:hover { background: rgba(0,229,255,0.06); }
+  .ves-item.active { background: rgba(0,229,255,0.1); border-left: 2px solid var(--accent); }
+
+  .ves-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .ves-name { flex: 1; color: var(--text); }
+  .ves-elev {
+    color: var(--accent);
+    font-size: 0.65rem;
+    font-weight: 700;
+  }
+
+  /* Simulation Controls */
+  .sim-btn {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.68rem;
+    cursor: pointer;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    text-align: left;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .sim-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,229,255,0.05); }
+  .sim-btn.active { border-color: var(--accent2); color: var(--accent2); background: rgba(255,107,53,0.1); }
+
+  .sim-btn .btn-icon { margin-right: 8px; }
+
+  /* Slider */
+  .slider-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+  .slider-label { font-size: 0.62rem; color: var(--muted); display: flex; justify-content: space-between; }
+  .slider-label span { color: var(--accent); }
+
+  input[type=range] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+
+  /* Legend */
+  .legend-bar {
+    height: 12px;
+    border-radius: 3px;
+    background: linear-gradient(to right, #1a4a2e, #5a8a3a, #c8a84b, #e8c87a, #ffffff);
+    margin: 6px 0;
+  }
+  .legend-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.58rem;
+    color: var(--muted);
+  }
+
+  /* Info box */
+  .info-card {
+    background: rgba(0,229,255,0.04);
+    border: 1px solid rgba(0,229,255,0.15);
+    border-radius: 4px;
+    padding: 10px;
+    font-size: 0.65rem;
+    line-height: 1.7;
+  }
+  .info-card .label { color: var(--muted); }
+  .info-card .value { color: var(--accent); font-weight: 700; }
+
+  /* CANVAS AREA */
+  .canvas-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .canvas-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(9,15,22,0.8);
+    font-size: 0.62rem;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .toolbar-btn {
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+  }
+  .toolbar-btn:hover, .toolbar-btn.active { border-color: var(--accent); color: var(--accent); }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+  }
+  canvas:active { cursor: grabbing; }
+
+  /* OVERLAY HUD */
+  .hud-overlay {
+    position: absolute;
+    top: 52px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+  }
+
+  .hud-card {
+    background: rgba(5,10,15,0.85);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 0.62rem;
+    min-width: 160px;
+    backdrop-filter: blur(8px);
+  }
+
+  .hud-title {
+    color: var(--muted);
+    font-size: 0.55rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .hud-metric {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3px;
+  }
+  .hud-metric .k { color: var(--muted); }
+  .hud-metric .v { color: var(--accent3); font-weight: 700; }
+
+  /* Sim overlay */
+  .sim-status {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(5,10,15,0.9);
+    border: 1px solid var(--accent2);
+    border-radius: 6px;
+    padding: 8px 20px;
+    font-size: 0.68rem;
+    color: var(--accent2);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    backdrop-filter: blur(8px);
+    display: none;
+    pointer-events: none;
+  }
+
+  .sim-status.visible { display: block; }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute;
+    background: rgba(5,10,15,0.95);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 0.65rem;
+    pointer-events: none;
+    display: none;
+    z-index: 100;
+    min-width: 160px;
+  }
+  .tooltip .t-name { color: var(--accent); font-weight: 700; font-size: 0.72rem; margin-bottom: 4px; }
+  .tooltip .t-row { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); margin-bottom: 2px; }
+  .tooltip .t-row span:last-child { color: var(--text); }
+
+  /* RIGHT PANEL */
+  .right-panel {
+    width: 220px;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .right-panel::-webkit-scrollbar { width: 4px; }
+  .right-panel::-webkit-scrollbar-track { background: var(--bg); }
+  .right-panel::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .analysis-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(15,32,53,0.5);
+    font-size: 0.65rem;
+  }
+  .analysis-row .ak { color: var(--muted); }
+  .analysis-row .av { color: var(--text); font-weight: 700; }
+  .analysis-row .av.hi { color: var(--accent3); }
+  .analysis-row .av.warn { color: var(--accent2); }
+
+  .mini-chart {
+    height: 60px;
+    position: relative;
+    margin-top: 8px;
+  }
+
+  .progress-bar-wrap {
+    margin-top: 4px;
+    margin-bottom: 8px;
+  }
+  .progress-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+  .progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s ease;
+  }
+
+  .edu-box {
+    background: rgba(57,255,20,0.04);
+    border: 1px solid rgba(57,255,20,0.2);
+    border-radius: 4px;
+    padding: 10px;
+    font-size: 0.62rem;
+    line-height: 1.7;
+    color: #7ab87a;
+  }
+  .edu-box strong { color: var(--accent3); display: block; margin-bottom: 4px; font-size: 0.65rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">FUTO <span>GeoSim</span> 3D</div>
+  <div style="font-family:'Syne',sans-serif; font-size:0.75rem; color:var(--muted); letter-spacing:0.08em;">
+    GENERATIVE TERRAIN INTELLIGENCE SYSTEM
+  </div>
+  <div class="header-meta">
+    <span class="status-dot"></span>LIVE SIMULATION<br>
+    Federal University of Technology, Owerri · Imo State, Nigeria
+  </div>
+</header>
+
+<div class="workspace">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="sidebar">
+    <div class="panel-section">
+      <div class="panel-title">▸ VES Survey Points (11)</div>
+      <div id="ves-list"></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">▸ Environmental Simulation</div>
+      <button class="sim-btn" id="btn-normal" onclick="setSimulation('normal')">
+        <span class="btn-icon">◈</span>Base Terrain
+      </button>
+      <button class="sim-btn" id="btn-flood" onclick="setSimulation('flood')">
+        <span class="btn-icon">◉</span>Flood Simulation
+      </button>
+      <button class="sim-btn" id="btn-drought" onclick="setSimulation('drought')">
+        <span class="btn-icon">◈</span>Drought / Erosion
+      </button>
+      <button class="sim-btn" id="btn-urban" onclick="setSimulation('urban')">
+        <span class="btn-icon">◈</span>Urban Heat Spread
+      </button>
+      <button class="sim-btn" id="btn-subsidence" onclick="setSimulation('subsidence')">
+        <span class="btn-icon">◈</span>Land Subsidence
+      </button>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">▸ Visualization Controls</div>
+      <div class="slider-row">
+        <div class="slider-label">Exaggeration <span id="exag-val">3.0×</span></div>
+        <input type="range" id="exag-slider" min="1" max="8" step="0.5" value="3"
+          oninput="document.getElementById('exag-val').textContent=this.value+'×'; elevExaggeration=parseFloat(this.value); drawTerrain();">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Rotation <span id="rot-val">35°</span></div>
+        <input type="range" id="rot-slider" min="10" max="80" step="1" value="35"
+          oninput="document.getElementById('rot-val').textContent=this.value+'°'; rotX=parseFloat(this.value)*(Math.PI/180); drawTerrain();">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Grid Resolution <span id="res-val">40</span></div>
+        <input type="range" id="res-slider" min="20" max="80" step="5" value="40"
+          oninput="document.getElementById('res-val').textContent=this.value; gridRes=parseInt(this.value); buildGrid(); drawTerrain();">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Sim Intensity <span id="sim-val">50%</span></div>
+        <input type="range" id="sim-slider" min="0" max="100" step="1" value="50"
+          oninput="document.getElementById('sim-val').textContent=this.value+'%'; simIntensity=parseInt(this.value)/100; drawTerrain();">
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">▸ Elevation Legend</div>
+      <div class="legend-bar"></div>
+      <div class="legend-labels">
+        <span>159m</span><span>180m</span><span>200m</span><span>220m</span><span>229m</span>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">▸ Selected Point</div>
+      <div class="info-card" id="selected-info">
+        <div class="label">Point</div>
+        <div class="value" id="sel-name">—</div>
+        <div class="label" style="margin-top:4px">Location</div>
+        <div style="color:var(--text); font-size:0.62rem" id="sel-loc">Click a VES point</div>
+        <div class="label" style="margin-top:4px">Coordinates</div>
+        <div style="color:var(--text); font-size:0.62rem" id="sel-coords">—</div>
+        <div class="label" style="margin-top:4px">Elevation</div>
+        <div class="value" id="sel-elev">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CANVAS -->
+  <div class="canvas-area">
+    <div class="canvas-toolbar">
+      <span><span class="status-dot" style="background:var(--accent)"></span>3D TERRAIN ACTIVE</span>
+      <button class="toolbar-btn active" id="view-3d" onclick="setView('3d')">3D PERSPECTIVE</button>
+      <button class="toolbar-btn" id="view-top" onclick="setView('top')">TOP-DOWN MAP</button>
+      <button class="toolbar-btn" id="view-cross" onclick="setView('cross')">CROSS-SECTION</button>
+      <span style="flex:1"></span>
+      <span id="toolbar-sim-label" style="color:var(--accent2)"></span>
+    </div>
+
+    <canvas id="terrain-canvas"></canvas>
+
+    <div class="hud-overlay">
+      <div class="hud-card">
+        <div class="hud-title">Terrain Stats</div>
+        <div class="hud-metric"><span class="k">Min Elev</span><span class="v">159 m</span></div>
+        <div class="hud-metric"><span class="k">Max Elev</span><span class="v">229 m</span></div>
+        <div class="hud-metric"><span class="k">Relief</span><span class="v">70 m</span></div>
+        <div class="hud-metric"><span class="k">Area</span><span class="v">~12 km²</span></div>
+      </div>
+      <div class="hud-card" id="sim-hud" style="border-color:rgba(255,107,53,0.4); display:none">
+        <div class="hud-title">Simulation</div>
+        <div id="sim-hud-content"></div>
+      </div>
+    </div>
+
+    <div class="sim-status" id="sim-status-bar"></div>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="panel-section">
+      <div class="panel-title">▸ Statistical Analysis</div>
+      <div class="analysis-row"><span class="ak">Mean Elev</span><span class="av hi" id="stat-mean">—</span></div>
+      <div class="analysis-row"><span class="ak">Std Dev</span><span class="av" id="stat-std">—</span></div>
+      <div class="analysis-row"><span class="ak">Slope Range</span><span class="av warn" id="stat-slope">—</span></div>
+      <div class="analysis-row"><span class="ak">Flood Risk</span><span class="av warn" id="stat-flood">—</span></div>
+      <div class="analysis-row"><span class="ak">Points</span><span class="av">11 VES</span></div>
+      <div class="analysis-row"><span class="ak">Interp</span><span class="av">IDW (p=2)</span></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">▸ Elevation Profile</div>
+      <canvas id="profile-chart" width="188" height="80"></canvas>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">▸ Risk Distribution</div>
+      <div id="risk-bars"></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">▸ Learn: How It Works</div>
+      <div class="edu-box" id="edu-content">
+        <strong>📡 VES — Vertical Electrical Sounding</strong>
+        Measures how electricity passes through soil layers. Higher resistance often means drier, more compact ground. Your 11 data points are survey locations around FUTO used to model the subsurface terrain.
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">▸ Generative AI Role</div>
+      <div class="edu-box" id="ai-edu">
+        <strong>🤖 What Gen AI Does Here</strong>
+        The terrain between your 11 survey points is <em>generated</em> by IDW interpolation — a spatial AI algorithm. Environmental simulations (flood, erosion) use procedural noise to create realistic-looking change patterns from minimal data.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// =============================================
+// VES DATA — Your real FUTO survey points
+// =============================================
+const VES_DATA = [
+  { id:"VES 1",  lon:7.016667, lat:5.366667, elev:177, loc:"Church, Eziobodo" },
+  { id:"VES 2",  lon:7.000000, lat:5.366667, elev:210, loc:"Girls Sec. School, Eziobodo" },
+  { id:"VES 3",  lon:6.983333, lat:5.433333, elev:178, loc:"Gas Plant, Avu" },
+  { id:"VES 4",  lon:6.983333, lat:5.400000, elev:185, loc:"FUTO Road, Obinze" },
+  { id:"VES 5",  lon:6.966667, lat:5.416667, elev:170, loc:"Church, Obinze" },
+  { id:"VES 6",  lon:7.000000, lat:5.433333, elev:216, loc:"Micoh Guest House Jct, Nekede" },
+  { id:"VES 7",  lon:7.016667, lat:5.400000, elev:197, loc:"Magistrate Court, Ihiagwa" },
+  { id:"VES 8",  lon:7.050000, lat:5.450000, elev:229, loc:"Industrial Cluster, Nekede" },
+  { id:"VES 9",  lon:6.950000, lat:5.433333, elev:159, loc:"Primary School, Avu" },
+  { id:"VES 10", lon:7.000000, lat:5.400000, elev:210, loc:"Umuchimma Village Gate, Ihiagwa" },
+  { id:"VES 11", lon:7.000000, lat:5.383333, elev:194, loc:"Behind Geology Building, FUTO" },
+];
+
+// Color ramp for elevation
+const elevColors = [
+  { t:0.0, r:26,  g:74,  b:46  },
+  { t:0.3, r:50,  g:110, b:40  },
+  { t:0.5, r:90,  g:138, b:58  },
+  { t:0.7, r:180, g:150, b:60  },
+  { t:0.85,r:200, g:180, b:100 },
+  { t:1.0, r:230, g:210, b:130 },
+];
+
+function elevColor(t, alpha=1) {
+  let i = 0;
+  for (let j = 0; j < elevColors.length-1; j++) {
+    if (t >= elevColors[j].t && t <= elevColors[j+1].t) { i = j; break; }
+  }
+  const a = elevColors[i], b = elevColors[i+1];
+  const f = (t - a.t) / (b.t - a.t + 0.0001);
+  const r = Math.round(a.r + (b.r-a.r)*f);
+  const g = Math.round(a.g + (b.g-a.g)*f);
+  const bl = Math.round(a.b + (b.b-a.b)*f);
+  return `rgba(${r},${g},${bl},${alpha})`;
+}
+
+// =============================================
+// STATE
+// =============================================
+let currentSim = 'normal';
+let elevExaggeration = 3.0;
+let rotX = 35 * Math.PI / 180;
+let rotY = -30 * Math.PI / 180;
+let gridRes = 40;
+let simIntensity = 0.5;
+let currentView = '3d';
+let selectedVES = null;
+let isDragging = false;
+let lastMouse = {x:0, y:0};
+let grid = [];
+let simGrid = [];
+
+// Bounding box of data
+const lonMin = Math.min(...VES_DATA.map(v=>v.lon)) - 0.005;
+const lonMax = Math.max(...VES_DATA.map(v=>v.lon)) + 0.005;
+const latMin = Math.min(...VES_DATA.map(v=>v.lat)) - 0.005;
+const latMax = Math.max(...VES_DATA.map(v=>v.lat)) + 0.005;
+const elevMin = Math.min(...VES_DATA.map(v=>v.elev));
+const elevMax = Math.max(...VES_DATA.map(v=>v.elev));
+
+// =============================================
+// IDW INTERPOLATION
+// Inverse Distance Weighting — the core GIS algorithm
+// Given known points, estimate value at any unknown location
+// w_i = 1 / d_i^p, estimated = Σ(w_i * z_i) / Σ(w_i)
+// =============================================
+function idw(lon, lat, power=2) {
+  let weightedSum = 0, totalWeight = 0;
+  for (const v of VES_DATA) {
+    const dx = (lon - v.lon) * 111 * Math.cos(lat * Math.PI/180); // approx km
+    const dy = (lat - v.lat) * 111;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 0.0001) return v.elev;
+    const w = 1 / Math.pow(dist, power);
+    weightedSum += w * v.elev;
+    totalWeight += w;
+  }
+  return weightedSum / totalWeight;
+}
+
+// =============================================
+// PERLIN-STYLE NOISE (simple, for simulation)
+// =============================================
+function noise(x, y, seed=0) {
+  const n = Math.sin(x * 127.1 + y * 311.7 + seed * 43.7) * 43758.5453;
+  return n - Math.floor(n);
+}
+function smoothNoise(x, y, seed=0) {
+  const ix = Math.floor(x), iy = Math.floor(y);
+  const fx = x - ix, fy = y - iy;
+  const ux = fx*fx*(3-2*fx), uy = fy*fy*(3-2*fy);
+  const a = noise(ix, iy, seed), b = noise(ix+1, iy, seed);
+  const c = noise(ix, iy+1, seed), d = noise(ix+1, iy+1, seed);
+  return a + (b-a)*ux + (c-a)*uy + ((a-b-c+d)*ux*uy);
+}
+function fractalNoise(x, y, octaves=4, seed=0) {
+  let v=0, amp=0.5, freq=1, max=0;
+  for(let i=0;i<octaves;i++){v+=smoothNoise(x*freq,y*freq,seed)*amp;max+=amp;amp*=0.5;freq*=2;}
+  return v/max;
+}
+
+// =============================================
+// BUILD INTERPOLATED GRID
+// =============================================
+function buildGrid() {
+  grid = [];
+  for (let j = 0; j < gridRes; j++) {
+    grid[j] = [];
+    for (let i = 0; i < gridRes; i++) {
+      const lon = lonMin + (i / (gridRes-1)) * (lonMax - lonMin);
+      const lat = latMin + (j / (gridRes-1)) * (latMax - latMin);
+      grid[j][i] = { lon, lat, elev: idw(lon, lat) };
+    }
+  }
+  updateStats();
+}
+
+// Apply simulation to grid
+function applySimulation() {
+  simGrid = grid.map(row => row.map(cell => ({...cell})));
+  const nx = gridRes, ny = gridRes;
+
+  if (currentSim === 'flood') {
+    // Flood: lower elevations fill with water
+    const waterLevel = elevMin + (elevMax - elevMin) * 0.25 * simIntensity;
+    for (let j=0;j<ny;j++) for (let i=0;i<nx;i++) {
+      simGrid[j][i].flooded = simGrid[j][i].elev < waterLevel;
+      simGrid[j][i].waterDepth = Math.max(0, waterLevel - simGrid[j][i].elev);
+    }
+  } else if (currentSim === 'drought') {
+    // Erosion: noise-based surface degradation
+    for (let j=0;j<ny;j++) for (let i=0;i<nx;i++) {
+      const nx2 = i/(gridRes-1)*5, ny2 = j/(gridRes-1)*5;
+      const erode = fractalNoise(nx2, ny2, 4, 42) * 15 * simIntensity;
+      simGrid[j][i].elev = Math.max(simGrid[j][i].elev - erode, elevMin);
+      simGrid[j][i].eroded = erode > 8 * simIntensity;
+    }
+  } else if (currentSim === 'urban') {
+    // Urban heat: proximity to high-elev clusters increases "heat"
+    for (let j=0;j<ny;j++) for (let i=0;i<nx;i++) {
+      const nx2 = i/(gridRes-1)*3, ny2 = j/(gridRes-1)*3;
+      const heat = fractalNoise(nx2+10, ny2+10, 3, 99) * simIntensity;
+      simGrid[j][i].heat = heat;
+    }
+  } else if (currentSim === 'subsidence') {
+    // Subsidence: certain zones sink
+    for (let j=0;j<ny;j++) for (let i=0;i<nx;i++) {
+      const nx2 = i/(gridRes-1)*4, ny2 = j/(gridRes-1)*4;
+      const sink = fractalNoise(nx2+20, ny2+20, 3, 77) * 20 * simIntensity;
+      simGrid[j][i].elev = Math.max(simGrid[j][i].elev - sink, elevMin - 5);
+      simGrid[j][i].sunk = sink > 12 * simIntensity;
+    }
+  }
+}
+
+// =============================================
+// ISOMETRIC 3D PROJECTION
+// =============================================
+function project3D(i, j, elev, canvas) {
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H*0.45;
+  const scale = Math.min(W, H) * 0.4;
+
+  // Normalize to [-0.5, 0.5]
+  const nx = (i / (gridRes-1)) - 0.5;
+  const ny = (j / (gridRes-1)) - 0.5;
+  const nz = ((elev - elevMin) / (elevMax - elevMin)) * 0.3 * elevExaggeration;
+
+  // Rotate around Y (horizontal spin)
+  const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+  const rx = nx * cosY - ny * sinY;
+  const ry = nx * sinY + ny * cosY;
+
+  // Rotate around X (tilt)
+  const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+  const ry2 = ry * cosX - nz * sinX;
+  const rz = ry * sinX + nz * cosX;
+
+  return {
+    sx: cx + rx * scale,
+    sy: cy - ry2 * scale + rz * scale * 0.5,
+    depth: ry2
+  };
+}
+
+// =============================================
+// MAIN DRAW FUNCTION
+// =============================================
+function drawTerrain() {
+  const canvas = document.getElementById('terrain-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth, H = canvas.offsetHeight;
+  canvas.width = W; canvas.height = H;
+
+  ctx.fillStyle = '#050a0f';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(15,32,53,0.3)';
+  ctx.lineWidth = 0.5;
+  for (let x=0;x<W;x+=40) { ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke(); }
+  for (let y=0;y<H;y+=40) { ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke(); }
+
+  applySimulation();
+
+  if (currentView === '3d') draw3D(canvas, ctx);
+  else if (currentView === 'top') drawTopDown(canvas, ctx);
+  else drawCrossSection(canvas, ctx);
+
+  drawVESPoints(canvas, ctx);
+  drawProfileChart();
+  updateSimHUD();
+}
+
+function draw3D(canvas, ctx) {
+  const W = canvas.width, H = canvas.height;
+
+  // Draw quads back-to-front (painter's algorithm)
+  const quads = [];
+  for (let j=0;j<gridRes-1;j++) {
+    for (let i=0;i<gridRes-1;i++) {
+      const cells = [
+        simGrid[j][i], simGrid[j][i+1],
+        simGrid[j+1][i+1], simGrid[j+1][i]
+      ];
+      const avgElev = cells.reduce((s,c)=>s+c.elev,0)/4;
+      const t = (avgElev - elevMin) / (elevMax - elevMin);
+      const p = cells.map((c,ci)=>{
+        const ii = [i,i+1,i+1,i][ci];
+        const jj = [j,j,j+1,j+1][ci];
+        return project3D(ii, jj, c.elev, canvas);
+      });
+      const avgDepth = p.reduce((s,pt)=>s+pt.depth,0)/4;
+
+      let color;
+      const cell = simGrid[j][i];
+      if (currentSim==='flood' && cell.flooded) {
+        color = `rgba(0,${80+cell.waterDepth*3},${160+cell.waterDepth*2},0.85)`;
+      } else if (currentSim==='drought' && cell.eroded) {
+        color = `rgba(${120+t*80},${80+t*40},${30+t*20},0.9)`;
+      } else if (currentSim==='urban') {
+        const h = cell.heat || 0;
+        color = `rgba(${150+h*100},${80-h*40},${20},0.9)`;
+      } else if (currentSim==='subsidence' && cell.sunk) {
+        color = `rgba(80,60,100,0.85)`;
+      } else {
+        color = elevColor(t, 0.9);
+      }
+
+      quads.push({ p, avgDepth, color, i, j });
+    }
+  }
+
+  quads.sort((a,b)=>a.avgDepth-b.avgDepth);
+
+  for (const q of quads) {
+    ctx.beginPath();
+    ctx.moveTo(q.p[0].sx, q.p[0].sy);
+    for (let k=1;k<4;k++) ctx.lineTo(q.p[k].sx, q.p[k].sy);
+    ctx.closePath();
+    ctx.fillStyle = q.color;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,10,20,0.25)';
+    ctx.lineWidth = 0.3;
+    ctx.stroke();
+  }
+
+  // Axes
+  const o = project3D(0, 0, elevMin, canvas);
+  const xax = project3D(gridRes-1, 0, elevMin, canvas);
+  const yax = project3D(0, gridRes-1, elevMin, canvas);
+  ctx.strokeStyle = 'rgba(0,229,255,0.4)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(o.sx,o.sy); ctx.lineTo(xax.sx,xax.sy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(o.sx,o.sy); ctx.lineTo(yax.sx,yax.sy); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = 'rgba(0,229,255,0.5)';
+  ctx.font = '9px Space Mono';
+  ctx.fillText('E →', xax.sx+4, xax.sy);
+  ctx.fillText('N ↑', yax.sx-18, yax.sy-4);
+}
+
+function drawTopDown(canvas, ctx) {
+  const W = canvas.width, H = canvas.height;
+  const pad = 60;
+  const cw = W - 2*pad, ch = H - 2*pad;
+
+  for (let j=0;j<gridRes-1;j++) {
+    for (let i=0;i<gridRes-1;i++) {
+      const x = pad + (i/(gridRes-1))*cw;
+      const y = pad + ((gridRes-1-j)/(gridRes-1))*ch;
+      const w = cw/(gridRes-1), h = ch/(gridRes-1);
+      const cell = simGrid[j][i];
+      const t = (cell.elev - elevMin) / (elevMax - elevMin);
+
+      let color;
+      if (currentSim==='flood' && cell.flooded) color = `rgba(0,100,200,0.85)`;
+      else if (currentSim==='urban') color = `rgba(${150+(cell.heat||0)*100},${80-(cell.heat||0)*40},20,1)`;
+      else color = elevColor(t, 1);
+
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y-h, w+1, h+1);
+    }
+  }
+
+  // Contour lines
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 0.5;
+  const levels = [170,180,190,200,210,220];
+  for (const lvl of levels) {
+    for (let j=0;j<gridRes-1;j++) {
+      for (let i=0;i<gridRes-1;i++) {
+        const e00 = simGrid[j][i].elev, e10 = simGrid[j][i+1]?.elev || e00;
+        const e01 = simGrid[j+1]?.[i]?.elev || e00;
+        if ((e00 < lvl && e10 >= lvl) || (e00 >= lvl && e10 < lvl)) {
+          const x0 = pad + (i/(gridRes-1))*cw;
+          const y0 = pad + ((gridRes-1-j)/(gridRes-1))*ch;
+          ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0+cw/(gridRes-1),y0); ctx.stroke();
+        }
+      }
+    }
+  }
+
+  // Labels
+  ctx.fillStyle = 'rgba(0,229,255,0.6)';
+  ctx.font = '10px Space Mono';
+  ctx.fillText('← W', pad, H-12);
+  ctx.fillText('E →', W-pad-20, H-12);
+  ctx.save(); ctx.translate(14, H/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('N ↑', 0, 0); ctx.restore();
+}
+
+function drawCrossSection(canvas, ctx) {
+  const W = canvas.width, H = canvas.height;
+  const pad = 60; const bH = H - pad*1.5;
+
+  // Draw W-E cross section at mid-latitude
+  const midJ = Math.floor(gridRes/2);
+  const pts = simGrid[midJ].map((cell, i) => ({
+    x: pad + (i/(gridRes-1)) * (W-2*pad),
+    y: bH - ((cell.elev - elevMin)/(elevMax-elevMin)) * (bH - pad)
+  }));
+
+  // Fill area
+  const grad = ctx.createLinearGradient(0, pad, 0, bH);
+  grad.addColorStop(0, 'rgba(200,168,75,0.8)');
+  grad.addColorStop(0.5, 'rgba(90,138,58,0.7)');
+  grad.addColorStop(1, 'rgba(26,74,46,0.5)');
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, bH);
+  for (const p of pts) ctx.lineTo(p.x, p.y);
+  ctx.lineTo(pts[pts.length-1].x, bH);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i=1; i<pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.strokeStyle = 'rgba(200,220,100,0.9)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Flood line
+  if (currentSim === 'flood') {
+    const waterLevel = elevMin + (elevMax - elevMin) * 0.25 * simIntensity;
+    const wy = bH - ((waterLevel - elevMin)/(elevMax-elevMin)) * (bH - pad);
+    ctx.beginPath(); ctx.moveTo(pad, wy); ctx.lineTo(W-pad, wy);
+    ctx.strokeStyle = 'rgba(0,150,255,0.8)'; ctx.lineWidth = 2;
+    ctx.setLineDash([6,4]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(0,150,255,0.5)';
+    ctx.font = '10px Space Mono';
+    ctx.fillText(`Water Level: ${Math.round(waterLevel)}m`, pad+4, wy-6);
+  }
+
+  // Axis
+  ctx.strokeStyle = 'rgba(0,229,255,0.4)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad,pad); ctx.lineTo(pad,bH); ctx.lineTo(W-pad,bH); ctx.stroke();
+
+  for (let elv=160; elv<=230; elv+=10) {
+    const y2 = bH - ((elv-elevMin)/(elevMax-elevMin))*(bH-pad);
+    ctx.fillStyle = 'rgba(58,80,104,0.8)'; ctx.font='9px Space Mono';
+    ctx.fillText(elv+'m', 8, y2+3);
+    ctx.beginPath(); ctx.moveTo(pad-3,y2); ctx.lineTo(pad,y2);
+    ctx.strokeStyle='rgba(58,80,104,0.6)'; ctx.stroke();
+  }
+
+  ctx.fillStyle='rgba(0,229,255,0.5)'; ctx.font='10px Space Mono';
+  ctx.fillText('W-E CROSS SECTION (Mid-latitude)', pad, H-12);
+}
+
+function drawVESPoints(canvas, ctx) {
+  const W = canvas.width, H = canvas.height;
+  const pad = 60;
+  const cw = W - 2*pad, ch = H - 2*pad;
+
+  vesScreenPositions = [];
+
+  VES_DATA.forEach((v, idx) => {
+    const i = (v.lon - lonMin) / (lonMax - lonMin) * (gridRes-1);
+    const j = (v.lat - latMin) / (latMax - latMin) * (gridRes-1);
+
+    let sx, sy;
+    if (currentView === '3d') {
+      const p = project3D(i, j, v.elev, canvas);
+      sx = p.sx; sy = p.sy;
+    } else if (currentView === 'top') {
+      sx = pad + ((v.lon-lonMin)/(lonMax-lonMin)) * cw;
+      sy = pad + ((latMax-v.lat)/(latMax-latMin)) * ch;
+    } else {
+      const xi = Math.round((v.lon-lonMin)/(lonMax-lonMin)*(gridRes-1));
+      sx = pad + ((v.lon-lonMin)/(lonMax-lonMin)) * cw;
+      sy = (H-pad*1.5) - ((v.elev-elevMin)/(elevMax-elevMin)) * ((H-pad*1.5)-pad);
+    }
+
+    vesScreenPositions.push({sx, sy, v});
+
+    const isSelected = selectedVES && selectedVES.id === v.id;
+    const r = isSelected ? 9 : 6;
+
+    ctx.beginPath();
+    ctx.arc(sx, sy, r, 0, Math.PI*2);
+    ctx.fillStyle = isSelected ? '#ff6b35' : '#00e5ff';
+    ctx.fill();
+    ctx.strokeStyle = isSelected ? '#fff' : 'rgba(0,229,255,0.5)';
+    ctx.lineWidth = isSelected ? 2 : 1;
+    ctx.stroke();
+
+    if (isSelected || currentView === 'top') {
+      ctx.fillStyle = isSelected ? '#ff6b35' : 'rgba(0,229,255,0.8)';
+      ctx.font = `${isSelected?'700 ':''} 8px Space Mono`;
+      ctx.fillText(v.id, sx+10, sy+4);
+    }
+  });
+}
+
+let vesScreenPositions = [];
+
+// =============================================
+// PROFILE CHART (right panel)
+// =============================================
+function drawProfileChart() {
+  const canvas = document.getElementById('profile-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#090f16';
+  ctx.fillRect(0,0,W,H);
+
+  const sorted = [...VES_DATA].sort((a,b)=>a.lon-b.lon);
+  const pad = 16;
+  const sw = W-2*pad, sh = H-2*pad;
+
+  ctx.beginPath();
+  sorted.forEach((v,i)=>{
+    const x = pad + (i/(sorted.length-1))*sw;
+    const y = pad + sh - ((v.elev-elevMin)/(elevMax-elevMin))*sh;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  sorted.forEach((v,i)=>{
+    const x = pad + (i/(sorted.length-1))*sw;
+    const y = pad + sh - ((v.elev-elevMin)/(elevMax-elevMin))*sh;
+    ctx.beginPath(); ctx.arc(x,y,2,0,Math.PI*2);
+    ctx.fillStyle='#00e5ff'; ctx.fill();
+  });
+
+  ctx.fillStyle='rgba(58,80,104,0.8)'; ctx.font='7px monospace';
+  ctx.fillText('W',pad,H-3); ctx.fillText('E',W-pad-5,H-3);
+}
+
+// =============================================
+// STATS
+// =============================================
+function updateStats() {
+  const elevs = VES_DATA.map(v=>v.elev);
+  const mean = elevs.reduce((s,e)=>s+e,0)/elevs.length;
+  const std = Math.sqrt(elevs.reduce((s,e)=>s+(e-mean)**2,0)/elevs.length);
+
+  document.getElementById('stat-mean').textContent = mean.toFixed(1)+' m';
+  document.getElementById('stat-std').textContent = std.toFixed(1)+' m';
+  document.getElementById('stat-slope').textContent = '2–8%';
+
+  const lowCount = VES_DATA.filter(v=>v.elev < mean-std).length;
+  const risk = lowCount === 0 ? 'LOW' : lowCount < 3 ? 'MODERATE' : 'HIGH';
+  document.getElementById('stat-flood').textContent = risk;
+
+  // Risk bars
+  const riskData = [
+    {label:'Low (<170m)', pct:9, color:'#0066aa'},
+    {label:'Medium (170-200m)', pct:55, color:'#5a8a3a'},
+    {label:'High (>200m)', pct:36, color:'#c8a84b'},
+  ];
+  document.getElementById('risk-bars').innerHTML = riskData.map(r=>`
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-label"><span>${r.label}</span><span style="color:${r.color}">${r.pct}%</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${r.pct}%;background:${r.color}"></div></div>
+    </div>
+  `).join('');
+}
+
+// =============================================
+// SIMULATION STATE
+// =============================================
+const simMeta = {
+  normal: { label: 'BASE TERRAIN', edu: '<strong>🗺️ Base Terrain Interpolation</strong>The terrain between your 11 VES points is computed using IDW (Inverse Distance Weighting). Each unknown cell gets a value based on a weighted average of nearby known points — closer points have MORE influence. The weight = 1/distance².', hud: [] },
+  flood: { label: 'FLOOD SIMULATION ACTIVE', edu: '<strong>🌊 Flood Simulation</strong>Water fills the lowest elevation zones first. This is a simplified version of a DEM (Digital Elevation Model) flood-fill algorithm. Real GIS flood models use flow accumulation and hydraulic equations, but this gives you a visual approximation of flood-prone zones around FUTO.', hud: [['Model','IDW + Fill'],['Risk Zone','< 170m'],['Algorithm','DEM Flood-fill']] },
+  drought: { label: 'EROSION SIMULATION ACTIVE', edu: '<strong>🏜️ Drought & Erosion</strong>Fractal noise (Perlin-style) simulates erosion patterns. Real-world erosion follows drainage channels and slope gradient. This generative model uses multi-octave noise to approximate realistic erosion textures — a common technique in procedural terrain generation.', hud: [['Model','Fractal Noise'],['Octaves','4'],['Erosion Rate','Variable']] },
+  urban: { label: 'URBAN HEAT SIMULATION ACTIVE', edu: '<strong>🌆 Urban Heat Island</strong>Urbanized areas absorb more heat. This simulation overlays a heat-intensity field onto the terrain, showing where impervious surfaces (roads, rooftops) might concentrate thermal energy. The pattern is generated using spatial noise seeded to cluster near high-density zones.', hud: [['Model','Thermal Noise'],['Peak Temp','+4.2°C'],['Coverage','~35%']] },
+  subsidence: { label: 'LAND SUBSIDENCE ACTIVE', edu: '<strong>⬇️ Land Subsidence</strong>Subsidence = ground sinking due to compaction, water extraction, or load. Your VES data measures electrical resistivity which correlates with soil moisture and compaction. Areas with lower resistivity (wetter, looser soil) are more subsidence-prone. This simulation highlights those risk zones.', hud: [['Model','Compaction Noise'],['Max Sink','~18m sim'],['Risk Zones','NW Cluster']] },
+};
+
+function setSimulation(type) {
+  currentSim = type;
+  document.querySelectorAll('.sim-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn-'+type).classList.add('active');
+
+  const meta = simMeta[type];
+  document.getElementById('edu-content').innerHTML = meta.edu;
+  document.getElementById('toolbar-sim-label').textContent = type !== 'normal' ? '⬡ ' + meta.label : '';
+
+  const bar = document.getElementById('sim-status-bar');
+  if (type !== 'normal') { bar.textContent = '⬡ ' + meta.label; bar.classList.add('visible'); }
+  else { bar.classList.remove('visible'); }
+
+  drawTerrain();
+}
+
+function updateSimHUD() {
+  const hud = document.getElementById('sim-hud');
+  const content = document.getElementById('sim-hud-content');
+  const meta = simMeta[currentSim];
+  if (currentSim === 'normal' || !meta.hud.length) { hud.style.display = 'none'; return; }
+  hud.style.display = 'block';
+  content.innerHTML = meta.hud.map(([k,v])=>`<div class="hud-metric"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+}
+
+// =============================================
+// VIEW SWITCHING
+// =============================================
+function setView(view) {
+  currentView = view;
+  ['3d','top','cross'].forEach(v => {
+    document.getElementById('view-'+v).classList.toggle('active', v===view);
+  });
+
+  const eduMap = {
+    '3d': '<strong>🏔️ 3D Perspective View</strong>This isometric projection maps your lon/lat/elevation data into screen space using rotation matrices. The vertical axis is exaggerated to make terrain differences visible. In real GIS software (QGIS, ArcGIS), this is called a "3D Scene" view.',
+    'top': '<strong>🗺️ Top-Down Map View</strong>The classic 2D GIS view. Color-coding by elevation creates a choropleth-style map. The contour lines connect points of equal elevation — these are the basis of traditional topographic maps used in surveying and civil engineering.',
+    'cross': '<strong>📐 Cross-Section Profile</strong>A vertical slice through the terrain along a W-E transect. Geologists and civil engineers use these to plan roads, drainage, and foundations. The dashed blue line in flood mode shows the simulated water table level.'
+  };
+  document.getElementById('edu-content').innerHTML = eduMap[view];
+  drawTerrain();
+}
+
+// =============================================
+// VES LIST INIT
+// =============================================
+function initVESList() {
+  const container = document.getElementById('ves-list');
+  VES_DATA.forEach(v => {
+    const t = (v.elev - elevMin) / (elevMax - elevMin);
+    const c = elevColor(t);
+    const div = document.createElement('div');
+    div.className = 'ves-item';
+    div.id = 'ves-item-'+v.id.replace(' ','');
+    div.innerHTML = `<div class="ves-dot" style="background:${c}"></div><span class="ves-name">${v.id}</span><span class="ves-elev">${v.elev}m</span>`;
+    div.onclick = () => selectVES(v);
+    container.appendChild(div);
+  });
+}
+
+function selectVES(v) {
+  selectedVES = v;
+  document.querySelectorAll('.ves-item').forEach(el=>el.classList.remove('active'));
+  const el = document.getElementById('ves-item-'+v.id.replace(' ',''));
+  if (el) el.classList.add('active');
+  document.getElementById('sel-name').textContent = v.id;
+  document.getElementById('sel-loc').textContent = v.loc;
+  document.getElementById('sel-coords').textContent = `${v.lon.toFixed(4)}°E, ${v.lat.toFixed(4)}°N`;
+  document.getElementById('sel-elev').textContent = v.elev + ' m';
+  drawTerrain();
+}
+
+// =============================================
+// MOUSE INTERACTION
+// =============================================
+const canvas = document.getElementById('terrain-canvas');
+
+canvas.addEventListener('mousedown', e => {
+  isDragging = true;
+  lastMouse = {x: e.clientX, y: e.clientY};
+});
+
+canvas.addEventListener('mousemove', e => {
+  if (isDragging && currentView === '3d') {
+    const dx = e.clientX - lastMouse.x;
+    const dy = e.clientY - lastMouse.y;
+    rotY += dx * 0.008;
+    rotX = Math.max(0.1, Math.min(Math.PI/2-0.1, rotX + dy * 0.006));
+    lastMouse = {x: e.clientX, y: e.clientY};
+    drawTerrain();
+  }
+
+  // Tooltip for VES points
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
+  const cx = mx * scaleX, cy = my * scaleY;
+  const tooltip = document.getElementById('tooltip');
+
+  let hit = null;
+  for (const {sx, sy, v} of vesScreenPositions) {
+    if (Math.hypot(cx-sx, cy-sy) < 12) { hit = v; break; }
+  }
+
+  if (hit) {
+    tooltip.style.display = 'block';
+    tooltip.style.left = (mx+16)+'px';
+    tooltip.style.top = (my-10)+'px';
+    const t = (hit.elev-elevMin)/(elevMax-elevMin);
+    tooltip.innerHTML = `
+      <div class="t-name">${hit.id}</div>
+      <div class="t-row"><span>Location</span><span>${hit.loc}</span></div>
+      <div class="t-row"><span>Elevation</span><span>${hit.elev} m</span></div>
+      <div class="t-row"><span>Lon/Lat</span><span>${hit.lon.toFixed(4)}, ${hit.lat.toFixed(4)}</span></div>
+      <div class="t-row"><span>Relative</span><span>${Math.round(t*100)}th pct</span></div>
+    `;
+  } else {
+    tooltip.style.display = 'none';
+  }
+});
+
+canvas.addEventListener('mouseup', () => isDragging = false);
+canvas.addEventListener('mouseleave', () => {
+  isDragging = false;
+  document.getElementById('tooltip').style.display = 'none';
+});
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  rotX = Math.max(0.1, Math.min(Math.PI/2-0.1, rotX + e.deltaY*0.002));
+  drawTerrain();
+}, {passive:false});
+
+// =============================================
+// INIT
+// =============================================
+window.addEventListener('load', () => {
+  initVESList();
+  buildGrid();
+  drawTerrain();
+  document.getElementById('btn-normal').classList.add('active');
+});
+
+window.addEventListener('resize', () => {
+  buildGrid();
+  drawTerrain();
+});
+</script>
+</body>
+</html>
