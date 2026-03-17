@@ -1,1 +1,26 @@
+name: geosim-futo
+channels:
+  - conda-forge
+  - defaults
 
+dependencies:
+  - python=3.10
+
+  # Core scientific stack
+  - numpy>=1.24
+  - pandas>=2.0
+  - scipy>=1.11
+
+  # Visualisation
+  - matplotlib>=3.7
+  - plotly>=5.18
+
+  # Jupyter
+  - jupyter>=1.0
+  - jupyterlab>=4.0
+  - nbformat>=5.9
+  - ipykernel>=6.25
+
+  # pip-only packages (none currently — all available on conda-forge)
+  # pip:
+  #   - some-package
