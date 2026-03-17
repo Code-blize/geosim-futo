@@ -1,1 +1,47 @@
+project_name: geosim-futo
 
+data:
+  raw_points: data/raw/futo_elevation_points.csv
+  processed_dir: data/processed
+
+outputs:
+  figures_dir: outputs/figures
+  reports_dir: outputs/reports
+  tables_dir: outputs/tables
+  web_dir: app/web
+
+notebooks:
+  full_workflow: notebooks/00_geosim_futo_full_workflow.ipynb
+
+processed_files:
+  interpolation_validation: data/processed/interpolation_validation_results.csv
+  terrain_grid: data/processed/futo_terrain_grid.csv
+  terrain_class_grid: data/processed/terrain_class_grid.csv
+  flood_susceptibility_grid: data/processed/flood_susceptibility_grid.csv
+  scenario_summary: data/processed/scenario_summary.csv
+
+figures:
+  interpolation_2d: outputs/figures/interpolation_comparison_2d.png
+  interpolation_3d: outputs/figures/interpolation_comparison_3d.png
+  contour_map: outputs/figures/contour_map.png
+  slope_map: outputs/figures/slope_map.png
+  terrain_classification: outputs/figures/terrain_classification_map.png
+  flood_susceptibility: outputs/figures/flood_susceptibility_map.png
+  classified_flood_zones: outputs/figures/classified_flood_zones.png
+  scenario_comparison: outputs/figures/scenario_comparison.png
+  semantic_scene_zones: outputs/figures/semantic_scene_zones.png
+
+reports:
+  narrative: outputs/reports/futo_project_narrative.txt
+  abstract: outputs/reports/futo_project_abstract.txt
+  genai_prompts: outputs/reports/futo_genai_scene_prompts.txt
+
+tables:
+  zone_stats: outputs/tables/zone_stats.csv
+  project_metrics: outputs/tables/project_metrics.json
+  scene_prompts: outputs/tables/scene_prompts.json
+
+web:
+  terrain_html: app/web/futo_interactive_terrain.html
+  flood_3d_html: app/web/futo_3d_flood_susceptibility.html
+  scenario_html: app/web/futo_moderate_inundation_scenario.html
