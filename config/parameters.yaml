@@ -1,1 +1,43 @@
+interpolation:
+  selected_method: idw
+  grid_resolution: 150
+  idw_power: 2
+  validation_methods:
+    - nearest
+    - linear
+    - cubic
+    - idw
 
+terrain_analysis:
+  contour_levels_filled: 20
+  contour_levels_lines: 10
+  terrain_percentiles:
+    lowland: 33
+    highland: 66
+
+susceptibility:
+  elevation_weight: 0.45
+  slope_weight: 0.35
+  terrain_weight: 0.20
+  class_percentiles:
+    low: 33
+    high: 66
+
+terrain_vulnerability:
+  lowland: 1.0
+  midland: 0.5
+  highland: 0.1
+
+scenarios:
+  mild_percentile: 25
+  moderate_percentile: 40
+  severe_percentile: 55
+
+genai:
+  semantic_zones:
+    1: Wet Lowland
+    2: Transitional Midland
+    3: Stable Upland
+    4: Mixed Terrain
+  visualization_goal: AR/VR-style environmental simulation
+  tone: educational, analytical, geospatially realistic
