@@ -1,0 +1,4 @@
+scenario,water_level_m,inundated_cells,inundated_percent
+Mild,186.3741745786683,5625,25.0
+Moderate,192.09020911184055,9000,40.0
+Severe,195.9792675225028,12375,55.0
