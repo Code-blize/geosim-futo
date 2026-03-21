@@ -1,0 +1,11 @@
+{
+  "elevation_min": 159.001438,
+  "elevation_max": 229.0,
+  "mean_elevation": 193.373578,
+  "mean_slope": 0.346931,
+  "max_slope": 2.057727,
+  "dominant_terrain": "Highland",
+  "high_risk_percent": 34.0,
+  "moderate_risk_percent": 33.0,
+  "low_risk_percent": 33.0
+}
